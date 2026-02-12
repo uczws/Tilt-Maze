@@ -34,7 +34,7 @@
 export const LEVELS = [
     {
         id: 1,
-        name: 'Tutorial Run',
+        name: 'First Steps',
         width: 10,
         height: 10,
         start: [1, 1],
@@ -166,7 +166,7 @@ export const LEVELS = [
     },
     {
         id: 5,
-        name: 'Spiral Drift',
+        name: 'Zigzag Gauntlet',
         width: 18,
         height: 18,
         start: [1, 1],

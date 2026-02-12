@@ -137,34 +137,31 @@ export class Renderer {
         const goal = this.level.goal;
         const centerX = goal.x * this.cellSize;
         const centerY = goal.y * this.cellSize;
-        const radius = this.cellSize * 0.35;
-        const pulse = Math.sin(this.animationTime * 2.5) * 0.08 + 1;
-        const outerGlow = this.ctx.createRadialGradient(centerX, centerY, radius * 0.4, centerX, centerY, radius * 2.2 * pulse);
-        outerGlow.addColorStop(0, 'rgba(39, 174, 96, 0.25)');
-        outerGlow.addColorStop(0.6, 'rgba(34, 153, 84, 0.1)');
-        outerGlow.addColorStop(1, 'rgba(27, 142, 60, 0)');
-        this.ctx.fillStyle = outerGlow;
+        const radius = this.cellSize * 0.32;
+        // Dezenter weicher Rand statt starkem Glow
+        const softRing = this.ctx.createRadialGradient(centerX, centerY, radius * 0.6, centerX, centerY, radius * 1.5);
+        softRing.addColorStop(0, 'rgba(46, 204, 113, 0.35)');
+        softRing.addColorStop(0.7, 'rgba(39, 174, 96, 0.12)');
+        softRing.addColorStop(1, 'rgba(34, 153, 84, 0)');
+        this.ctx.fillStyle = softRing;
         this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, radius * 2.2 * pulse, 0, Math.PI * 2);
+        this.ctx.arc(centerX, centerY, radius * 1.5, 0, Math.PI * 2);
         this.ctx.fill();
-        const goalGradient = this.ctx.createRadialGradient(centerX - radius * 0.3, centerY - radius * 0.3, radius * 0.15, centerX, centerY, radius);
-        goalGradient.addColorStop(0, '#2ecc71');
-        goalGradient.addColorStop(0.4, '#27ae60');
-        goalGradient.addColorStop(1, '#229954');
-        this.ctx.fillStyle = goalGradient;
+        // Fester grüner Kreis, leicht abgerundeter Verlauf
+        const fill = this.ctx.createRadialGradient(centerX - radius * 0.25, centerY - radius * 0.25, 0, centerX, centerY, radius);
+        fill.addColorStop(0, '#3dd879');
+        fill.addColorStop(0.5, '#2ecc71');
+        fill.addColorStop(1, '#27ae60');
+        this.ctx.fillStyle = fill;
         this.ctx.beginPath();
         this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         this.ctx.fill();
-        this.ctx.strokeStyle = '#1e8449';
-        this.ctx.lineWidth = Math.max(1.5, this.cellSize * 0.04);
+        // Dünner, heller Rand
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        this.ctx.lineWidth = Math.max(1, this.cellSize * 0.02);
         this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, radius * 0.85, 0, Math.PI * 2);
+        this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         this.ctx.stroke();
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        this.ctx.font = `bold ${Math.max(18, radius * 0.9)}px Arial`;
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText('✓', centerX, centerY);
     }
 
     drawBall(ball) {
