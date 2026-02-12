@@ -683,6 +683,7 @@ h2 {
         min-height: 92px;
         flex-shrink: 0;
         z-index: 100;
+        margin-top: auto;
     }
     
     .mobile-bottom-buttons > button {
@@ -742,7 +743,6 @@ h2 {
         overflow: visible;
         flex: 1 1 0;
         min-height: 0;
-        max-height: calc(var(--app-height) - 120px);
         display: flex;
         flex-direction: column;
     }
