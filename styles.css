@@ -396,6 +396,8 @@ h2 {
     gap: 8px;
     max-height: 360px;
     overflow-y: auto;
+    padding: 3px;
+    box-sizing: border-box;
 }
 
 .level-button-hud {
