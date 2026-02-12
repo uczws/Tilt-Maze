@@ -19,6 +19,7 @@
     --overlay-bg: rgba(44, 62, 80, 0.9);
     --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.1);
     --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.15);
+    --app-height: 100dvh;
 }
 
 * {
@@ -62,7 +63,7 @@ body {
 
 #game-screen {
     width: min(95vw, 1200px);
-    height: min(95vh, 900px);
+    height: min(95dvh, 900px);
     display: flex;
     flex-direction: column;
     background: var(--bg-primary);
@@ -172,7 +173,7 @@ body {
 
 #game-canvas {
     width: min(90vw, 800px);
-    height: min(60vh, 600px);
+    height: min(60dvh, 600px);
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -542,13 +543,13 @@ h2 {
 
     #game-canvas {
         width: min(92vw, 650px);
-        height: min(55vh, 520px);
+        height: min(55dvh, 520px);
     }
 }
 
 @media (max-width: 768px) {
     /* Verstecke Game-Screen wenn Start-Screen aktiv ist */
-    #game-container:has(#start-screen.active) #game-screen {
+    #game-container.start-active #game-screen {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -741,7 +742,7 @@ h2 {
         overflow: visible;
         flex: 1 1 0;
         min-height: 0;
-        max-height: calc(100vh - 120px);
+        max-height: calc(var(--app-height) - 120px);
         display: flex;
         flex-direction: column;
     }
@@ -751,7 +752,7 @@ h2 {
         width: 100%;
         flex: 1 1 0;
         min-height: 0;
-        max-height: calc(100vh - 220px);
+        max-height: calc(var(--app-height) - 220px);
         border-width: 6px;
         border-radius: 0;
     }
@@ -773,7 +774,7 @@ h2 {
     #level-select-screen-mobile .level-grid-hud {
         grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
         gap: 10px;
-        max-height: 50vh;
+        max-height: 50dvh;
         margin-bottom: 20px;
     }
 }

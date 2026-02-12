@@ -282,6 +282,22 @@ class GameEngine {
     }
         window.addEventListener('resize', updateOrientation);
         updateOrientation();
+
+        const syncAppHeight = () => {
+            const h = window.visualViewport?.height || window.innerHeight;
+            document.documentElement.style.setProperty('--app-height', `${h}px`);
+
+            // Canvas neu skalieren, wenn sich die sichtbare Höhe ändert
+            this.renderer?.resizeCanvas?.();
+        };
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', syncAppHeight, { passive: true });
+            window.visualViewport.addEventListener('scroll', syncAppHeight, { passive: true });
+        }
+
+        window.addEventListener('resize', syncAppHeight, { passive: true });
+        syncAppHeight();
     }
 }
 

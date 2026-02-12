@@ -293,6 +293,8 @@ export class UIManager {
         const gameScreen = document.getElementById('game-screen');
         const startScreen = this.screens.start;
         if (gameScreen && startScreen) {
+            const container = document.getElementById('game-container');
+            container?.classList.toggle('start-active', startScreen.classList.contains('active'));
             if (startScreen.classList.contains('active')) {
                 gameScreen.style.pointerEvents = 'none';
             } else {
