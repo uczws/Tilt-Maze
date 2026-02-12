@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="HTML5 tilt-controlled maze game that uses DeviceOrientation sensors and Canvas rendering.">
+    <title>Tilt Maze</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-screen" aria-live="polite">
+            <header class="hud-bar" aria-label="Game status bar">
+                <div class="hud-stat">
+                    <span class="hud-label">Lives</span>
+                    <strong id="lives-display" aria-label="3 lives">♥♥♥</strong>
+                </div>
+                <div class="hud-stat">
+                    <span class="hud-label">Level</span>
+                    <strong id="level-display">1 · Tutorial Run</strong>
+                </div>
+                <button id="burger-menu-button" class="burger-menu-button mobile-only" type="button" aria-label="Menu">☰</button>
+                <div class="hud-actions">
+                    <button id="calibrate-button" class="game-button small" type="button">Calibrate</button>
+                    <div class="level-select-wrapper">
+                        <button id="level-select-hud-button" class="game-button small" type="button">Levels</button>
+                        <div id="level-select-dropdown" class="level-select-dropdown" aria-label="Level selection">
+                            <div id="level-grid-hud" class="level-grid-hud" aria-live="polite"></div>
+                        </div>
+                    </div>
+                    <button id="restart-button" class="game-button small" type="button">Restart Level</button>
+                    <button id="menu-button" class="game-button small" type="button">Main Menu</button>
+                    <button id="pause-button" class="game-button small" type="button">Pause</button>
+                </div>
+            </header>
+
+            <main class="board-wrapper">
+                <canvas id="game-canvas" width="800" height="800" aria-label="Labyrinth board"></canvas>
+                <!-- Mobile: Buttons unten als quadratische Buttons -->
+                <div class="mobile-bottom-buttons mobile-only">
+                    <button id="calibrate-button-mobile" class="mobile-square-button" type="button">Calibrate</button>
+                </div>
+            </main>
+        </div>
+
+        <div id="orientation-message" class="orientation-message" role="status" aria-live="assertive">
+            <p>Please rotate your device to landscape for the best experience.</p>
+        </div>
+
+        <div id="calibration-message" class="calibration-message" role="status">
+            <p>Calibrating sensors — keep the device steady…</p>
+        </div>
+
+        <section id="start-screen" class="screen active" aria-label="Start screen">
+            <div class="screen-content">
+                <h1>Tilt Maze</h1>
+                <p class="subtitle">Guide the brass ball across the handcrafted labyrinth.</p>
+                <div class="orientation-hint mobile-only">
+                    <p><strong>💡 Tip for Phone & Tablet:</strong></p>
+                    <p>Enable screen lock for the best gaming experience!</p>
+                </div>
+                <div class="instructions">
+                    <p><strong>Goal:</strong> Reach the glowing goal socket without falling into holes.</p>
+                    <p><strong>Mobile:</strong> Gently tilt your phone or tablet, or use touch controls to swipe and guide the ball.</p>
+                    <p><strong>Desktop:</strong> Use the arrow keys or WASD to mimic tilting.</p>
+                </div>
+                <div class="screen-buttons">
+                    <button id="start-button" class="game-button" type="button">Start Adventure</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="pause-screen" class="screen overlay" aria-label="Pause menu">
+            <div class="screen-content">
+                <h2>Game Paused</h2>
+                <p>Take a breather — the labyrinth waits.</p>
+                <button id="resume-button" class="game-button" type="button">Resume</button>
+            </div>
+        </section>
+
+        <section id="win-screen" class="screen overlay" aria-label="Win screen">
+            <div class="screen-content">
+                <h2>Level Complete!</h2>
+                <p id="win-message"></p>
+                <p id="win-time">Time: 0.0 s</p>
+                <button id="next-level-button" class="game-button" type="button">Next Level</button>
+                <button id="win-menu-button" class="game-button secondary" type="button">Main Menu</button>
+            </div>
+        </section>
+
+        <section id="lose-screen" class="screen overlay" aria-label="Lose screen">
+            <div class="screen-content">
+                <h2>Fell Into A Hole</h2>
+                <p id="lose-message">Gravity won this round — try a different tilt.</p>
+                <button id="retry-button" class="game-button" type="button">Retry Level</button>
+                <button id="lose-menu-button" class="game-button secondary" type="button">Main Menu</button>
+            </div>
+        </section>
+
+        <section id="burger-menu-screen" class="screen overlay mobile-only" aria-label="Burger menu">
+            <div class="screen-content">
+                <h2>Menu</h2>
+                <button id="burger-resume-button" class="game-button" type="button">Resume</button>
+                <button id="burger-levels-button" class="game-button" type="button">Levels</button>
+                <button id="burger-restart-button" class="game-button" type="button">Restart Level</button>
+                <button id="burger-menu-menu-button" class="game-button secondary" type="button">Main Menu</button>
+            </div>
+        </section>
+
+        <section id="level-select-screen-mobile" class="screen overlay mobile-only" aria-label="Level selection">
+            <div class="screen-content">
+                <h2>Select Level</h2>
+                <div id="level-grid-hud-mobile" class="level-grid-hud" aria-live="polite"></div>
+                <button id="level-select-back-button" class="game-button secondary" type="button">Back</button>
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="./game.js"></script>
+</body>
+</html>
