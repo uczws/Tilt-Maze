@@ -1,52 +1,29 @@
 /**
- * =============================================================
- * Input Module
- * -------------------------------------------------------------
+ * @file input.js
+ * @description Input abstraction for Tilt Maze.
  *
- * PURPOSE:
- * Central module that manages all input methods for the Tilt Maze game.
- * It normalizes sensor data (orientation and motion) and exposes
- * keyboard/touch fallbacks so that the physics engine always receives
- * tilt values in the range [-1, 1].
+ * The rest of the game (physics + engine) only needs one thing: a normalized
+ * tilt vector in the range [-1, 1] for both axes.
  *
- * INPUT METHODS:
- * 1. DeviceOrientation (tilt sensor) – primary for mobile devices
- *    - Measures device tilt in degrees (beta = front/back tilt, gamma = left/right tilt)
- *    - Is used automatically when available
- *    - Requires explicit user permission on iOS 13+
+ * This module collects and normalizes input from multiple sources:
+ * - DeviceOrientation (preferred on mobile)
+ * - DeviceMotion (accelerometer fallback if orientation is unavailable)
+ * - Keyboard (WASD / Arrow keys)
+ * - Touch swipes (fallback on touch devices without sensors)
  *
- * 2. DeviceMotion (accelerometer) – alternative when DeviceOrientation is not available
- *    - Measures acceleration including gravity (m/s²)
- *    - Is only used as a fallback if DeviceOrientation cannot be used
- *
- * 3. Keyboard (fallback) – for desktop / laptops
- *    - Arrow keys or WASD
- *    - Is used automatically when no motion sensors are available
- *
- * 4. Touch (fallback) – for devices without motion sensors
- *    - Swiping on the canvas controls the tilt direction
- *    - Is used when neither sensors nor keyboard input are active
- *
- * CALIBRATION:
- * - Allows treating the current device orientation as the neutral position
- * - Stores the current beta/gamma values as offsets
- * - All subsequent sensor readings are corrected by this offset
- *
- * NORMALIZATION:
- * - Converts sensor readings (degrees or m/s²) into normalized values [-1, 1]
- * - DeviceOrientation: maxDegrees = 45° (maximum considered tilt)
- * - DeviceMotion: maxDegrees = 9.8 m/s² (gravity on Earth)
- *
- * SMOOTHING:
- * - Uses linear interpolation (lerp) for smooth movement
- * - Sensor mode: smoothing = 0.4 (faster reactions)
- * - Keyboard mode: smoothing = 0.75 (slower, more controlled motion)
- *
- * MODES:
- * - 'sensor': active motion sensors (DeviceOrientation or DeviceMotion)
- * - 'keyboard': keyboard- or touch-driven control
- *
- * =============================================================
+ * It also supports:
+ * - Calibration (treat current device pose as the neutral position)
+ * - Smoothing (lerp) to avoid jitter and create "physical" movement
+ */
+
+/**
+ * @typedef {{x: number, y: number}} TiltVector
+ * A normalized tilt vector. Positive x = tilt right, positive y = tilt down.
+ */
+
+/**
+ * @typedef {'sensor'|'keyboard'} InputMode
+ * Current active input mode.
  */
 
 const DEFAULT_CALLBACK = () => {};
@@ -65,6 +42,14 @@ const KEY_MAP = {
 
 const SUPPORTED_KEYS = Object.keys(KEY_MAP);
 
+/**
+ * Normalizes different input sources into a single tilt vector.
+ *
+ * Public API:
+ * - {@link requestPermission} (iOS 13+)
+ * - {@link calibrate} (set current pose as neutral)
+ * - {@link getTilt} (retrieve normalized tilt vector)
+ */
 export class InputController {
     /**
      * Constructor - initializes the InputController.
@@ -152,7 +137,7 @@ export class InputController {
             return;
         }
 
-        // Prüft, ob eine Berechtigung benötigt wird (iOS 13+)
+        // Check whether permission is required (iOS 13+).
         const needsPermission =
             (useOrientation && typeof DeviceOrientationEvent.requestPermission === 'function') ||
             (useMotion && typeof DeviceMotionEvent.requestPermission === 'function');
@@ -168,7 +153,7 @@ export class InputController {
     }
 
     /**
-     * Registriert DeviceOrientation/DeviceMotion Event-Listener
+     * Registers DeviceOrientation/DeviceMotion event listeners.
      * @param {boolean} useOrientation
      * @param {boolean} useMotion
      */
@@ -215,14 +200,14 @@ export class InputController {
         const calibratedBeta = this.isCalibrated ? beta - this.calibration.beta : beta;
         const calibratedGamma = this.isCalibrated ? gamma - this.calibration.gamma : gamma;
         
-        // Normalisiere auf [-1, 1] Bereich (45° = Maximum)
+        // Normalize to [-1, 1] (45° is treated as max tilt).
         const normalizedY = this.normalizeTilt(calibratedBeta, 45);
         const normalizedX = this.normalizeTilt(calibratedGamma, 45);
         
         // Apply smoothing and update the normalized tilt
         this.applySmoothedTilt(normalizedX, normalizedY);
         
-        // Wechsle zu Sensor-Modus, falls noch nicht aktiv
+        // Switch to sensor mode if not active yet.
         if (this.mode !== 'sensor') {
             this.switchMode('sensor');
         }
@@ -257,11 +242,11 @@ export class InputController {
             const calibratedBeta = this.isCalibrated ? beta - this.calibration.beta : beta;
             const calibratedGamma = this.isCalibrated ? gamma - this.calibration.gamma : gamma;
             
-            // Normalisiere auf [-1, 1] Bereich (9.8 m/s² = Maximum = Erdbeschleunigung)
+            // Normalize to [-1, 1] (9.8 m/s² ≈ earth gravity, used as max).
             const normalizedY = this.normalizeTilt(calibratedBeta, 9.8);
             const normalizedX = this.normalizeTilt(calibratedGamma, 9.8);
             
-            // Glättung anwenden
+            // Apply smoothing.
             this.applySmoothedTilt(normalizedX, normalizedY);
             if (this.mode !== 'sensor') {
                 this.switchMode('sensor');
@@ -270,16 +255,16 @@ export class InputController {
     };
 
     /**
-     * Fordert Berechtigung für Sensoren an (iOS 13+)
+     * Requests permission for motion sensors (iOS 13+).
      * 
-     * Auf iOS 13+ müssen Benutzer explizit die Berechtigung für
+     * On iOS 13+ users must explicitly grant permission for
      * DeviceOrientation/DeviceMotion erteilen. Diese Methode zeigt
      * einen nativen Dialog an.
      * 
-     * @returns {Promise<boolean>} true wenn Berechtigung erteilt wurde, sonst false
+     * @returns {Promise<boolean>} true if permission was granted, otherwise false
      */
     async requestPermission() {
-        // Bereits aktiv → keine Aktion nötig
+        // Already active → no action required.
         if (this.deviceOrientationActive) {
             return true;
         }
@@ -376,7 +361,7 @@ export class InputController {
             // Apply tilt with smoothing
             this.applySmoothedTilt(targetX, targetY);
             
-            // Wechsle zu Keyboard-Modus, falls keine Sensoren aktiv
+            // Switch to keyboard/touch mode if sensors are not active.
             if (!this.deviceOrientationActive) {
                 this.switchMode('keyboard');
             }
@@ -473,7 +458,7 @@ export class InputController {
                 }
             }
             
-            // Nächster Frame
+            // Next frame
             requestAnimationFrame(loop);
         };
         loop();
@@ -484,7 +469,7 @@ export class InputController {
      * @param {string} mode - 'sensor' oder 'keyboard'
      */
     switchMode(mode) {
-        if (this.mode === mode) return; // Keine Änderung nötig
+        if (this.mode === mode) return; // No change needed
         this.mode = mode;
         const message = mode === 'sensor'
             ? 'Tilt your device to play'
@@ -508,7 +493,7 @@ export class InputController {
         // Begrenze Wert auf [-maxDegrees, maxDegrees]
         const clamped = Math.max(-maxDegrees, Math.min(maxDegrees, value));
         
-        // Normalisiere auf [-1, 1]
+        // Normalize to [-1, 1]
         const normalized = clamped / maxDegrees;
         
         // Runde sehr kleine Werte auf 0 (verhindert Zittern)
@@ -580,7 +565,7 @@ export class InputController {
      *                   both in the range [-1, 1]
      */
     getTilt() {
-        return { ...this.tilt }; // Kopie zurückgeben (verhindert externe Manipulation)
+        return { ...this.tilt }; // Return a copy (prevents external mutation)
     }
 }
 

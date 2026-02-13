@@ -1,15 +1,26 @@
 /**
- * =============================================================
- * Renderer Module - Minimalist Modern Design
- * -------------------------------------------------------------
- * Clean, flat design with geometric shapes and modern colors.
- * Isometric-style rendering with clear visual hierarchy.
- * =============================================================
+ * @file renderer.js
+ * @description Canvas renderer for Tilt Maze.
+ *
+ * Rendering is intentionally kept separate from physics and UI logic.
+ * The renderer draws:
+ * - Board background + grid
+ * - Walls, holes, and the goal tile
+ * - The ball (with subtle shading)
+ *
+ * The canvas automatically resizes to its container and compensates for
+ * devicePixelRatio for crisp visuals on high-DPI screens.
  */
 
 import { CELL_TYPES } from './constants.js';
 
+/**
+ * Responsible for all drawing on the <canvas>.
+ */
 export class Renderer {
+    /**
+     * @param {string} canvasId DOM id of the <canvas> element.
+     */
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) {
@@ -22,12 +33,20 @@ export class Renderer {
         window.addEventListener('resize', () => this.resizeCanvas());
     }
 
+    /**
+     * Stores the active level and triggers a resize + first render.
+     * @param {Object} level Hydrated level data (grid, width/height, holes, goal).
+     */
     configureLevel(level) {
         this.level = level;
         this.resizeCanvas();
         this.renderPlaceholder();
     }
 
+    /**
+     * Resizes the canvas to match the container while preserving aspect ratio.
+     * Uses devicePixelRatio scaling so graphics stay sharp.
+     */
     resizeCanvas() {
         if (!this.level) return;
         const parent = this.canvas.parentElement || document.body;
@@ -48,6 +67,10 @@ export class Renderer {
         this.cellSize = scale;
     }
 
+    /**
+     * Draws one full frame (background, obstacles, goal, ball).
+     * @param {Object} ball Current ball state (x, y, radius).
+     */
     render(ball) {
         if (!this.level) return;
         this.animationTime += 0.015;
@@ -135,7 +158,7 @@ export class Renderer {
         const size = this.cellSize * 0.38;
         const pulse = Math.sin(this.animationTime * 2.5) * 0.06 + 1;
         const r = size * pulse;
-        // Leichter Glow
+        // Subtle glow
         const outerGlow = this.ctx.createRadialGradient(centerX, centerY, r * 0.5, centerX, centerY, r * 2);
         outerGlow.addColorStop(0, 'rgba(46, 204, 113, 0.25)');
         outerGlow.addColorStop(0.6, 'rgba(39, 174, 96, 0.1)');
@@ -144,7 +167,7 @@ export class Renderer {
         this.ctx.beginPath();
         this.ctx.arc(centerX, centerY, r * 2, 0, Math.PI * 2);
         this.ctx.fill();
-        // Zielfeld: Kreis in Grün
+        // Goal tile (green circle)
         const gradient = this.ctx.createRadialGradient(centerX - r * 0.3, centerY - r * 0.3, 0, centerX, centerY, r);
         gradient.addColorStop(0, '#2ecc71');
         gradient.addColorStop(0.5, '#27ae60');

@@ -1,18 +1,26 @@
 /**
- * =============================================================
- * Levels Module
- * -------------------------------------------------------------
- * Defines the six handcrafted maze layouts. Each level combines
- * wooden walls, holes, and a glowing goal tile inside a grid.
- * The grid is converted into numeric cells to drive physics and
- * rendering logic:
- *    0 = empty path
- *    1 = wall
- *    2 = hole
- *    3 = goal tile
- * Start and goal coordinates are stored relative to cell centers
- * so the physics engine can work directly in grid units.
- * =============================================================
+ * @file levels.js
+ * @description Handcrafted maze layouts + helpers to convert them into a numeric grid.
+ *
+ * The raw level data is intentionally compact and human-editable:
+ * - walls and holes are stored as [col, row] coordinates
+ * - start and goal are stored as grid coordinates and later centered to cell centers
+ *
+ * The hydrated grid uses numeric cell codes matching {@link CELL_TYPES}:
+ * 0 = empty, 1 = wall, 2 = hole, 3 = goal
+ */
+
+/**
+ * @typedef {Object} LevelData
+ * @property {number} id
+ * @property {string} name
+ * @property {number} width
+ * @property {number} height
+ * @property {{x:number,y:number}} start Ball spawn position (cell-centered coordinates).
+ * @property {{x:number,y:number}} goal Goal position (cell-centered coordinates).
+ * @property {Array<[number, number]>} walls Wall coordinates in grid cells.
+ * @property {Array<[number, number]>} holes Hole coordinates in grid cells.
+ * @property {number[][]} grid Numeric grid used by physics and rendering.
  */
 
 /**
@@ -62,12 +70,10 @@ export const LEVELS = [
         start: [1, 1],
         goal: [10, 10],
         walls: [
-            // Outer border walls
             ...Array.from({ length: 12 }, (_, i) => [i, 0]),
             ...Array.from({ length: 12 }, (_, i) => [i, 11]),
             ...Array.from({ length: 12 }, (_, i) => [0, i]),
             ...Array.from({ length: 12 }, (_, i) => [11, i]),
-            // Innere Wände - neues Design
             [3, 2], [3, 3], [3, 4],
             [1, 5], [5, 1],
 
@@ -79,7 +85,6 @@ export const LEVELS = [
             [7, 8], [8, 8], [9, 8]
         ],
         holes: [
-            // Strategically placed holes to punish greedy shortcuts
             [10, 5],
             [4, 3], [7, 3],
             [5, 6],
@@ -123,27 +128,21 @@ export const LEVELS = [
         start: [1, 1],
         goal: [14, 14],
         walls: [
-            // Outer border walls
             ...Array.from({ length: 16 }, (_, i) => [i, 0]),
             ...Array.from({ length: 16 }, (_, i) => [i, 15]),
             ...Array.from({ length: 16 }, (_, i) => [0, i]),
             ...Array.from({ length: 16 }, (_, i) => [15, i]),
-            // New design – spiral-like labyrinth with narrow corridors
-            // Left side – vertical blocking segments
             [3, 1], [3, 2], [3, 3],
             [6, 1], [6, 2],
             [9, 1], [9, 2], [9, 3],
-            // Obere Mitte - horizontale Blöcke
             [4, 4], [5, 4], [6, 4],
             [10, 4], [11, 4], [12, 4],
-            // Mittlere Bereiche - komplexe Struktur
             [2, 6], [3, 6], [4, 6],
             [7, 6], [8, 6], [9, 6],
             [12, 6], [13, 6],
             [1, 8], [2, 8], [3, 8],
             [5, 8], [7, 8],
             [10, 8], [11, 8], [12, 8],
-            // Untere Bereiche - mehr Herausforderung
             [4, 10], [5, 10], [6, 10],
             [9, 10], [10, 10], [11, 10],
             [2, 12], [3, 12],
@@ -153,10 +152,8 @@ export const LEVELS = [
             [5, 13], [6, 13],
             [9, 13], [10, 13],
             [13, 13]
-            // [13, 14] und [14, 13] frei für Zugang zum Ziel
         ],
         holes: [
-            // Strategically placed holes – denser than Level 3
             [5, 3], [8, 5],
             [4, 7], [11, 7],
             [8, 9], [12, 9],
@@ -172,45 +169,34 @@ export const LEVELS = [
         start: [1, 1],
         goal: [16, 16],
         walls: [
-            // Outer border walls
             ...Array.from({ length: 18 }, (_, i) => [i, 0]),
             ...Array.from({ length: 18 }, (_, i) => [i, 17]),
             ...Array.from({ length: 18 }, (_, i) => [0, i]),
             ...Array.from({ length: 18 }, (_, i) => [17, i]),
-            // Completely new design – zig-zag style maze
-            // Upper left section – small blocking clusters
             [2, 1], [2, 2],
             [4, 1],
             [6, 1], [6, 2],
-            // Upper right section – asymmetric structure
             [13, 1], [13, 2], [13, 3],
             [15, 1], [15, 2],
-            // Zentrale obere Barrieren
             [4, 3], [5, 3],
             [8, 3], [9, 3], [10, 3],
             [12, 3],
-            // Middle left section
             [1, 5], [2, 5], [3, 5],
             [5, 5], [6, 5],
-            // Middle right section
             [12, 5], [13, 5], [14, 5],
             [16, 5],
-            // Zentrale vertikale Barrieren
             [4, 7], [4, 8],
             [7, 7], [7, 8], [7, 9],
             [10, 7], [10, 8],
             [13, 7], [13, 8], [13, 9],
-            // Zentrale horizontale Barrieren
             [2, 10], [3, 10], [4, 10],
             [6, 10], [7, 10],
             [9, 10], [10, 10],
             [12, 10], [13, 10], [14, 10],
-            // Lower middle barriers
             [3, 12], [4, 12],
             [6, 12], [7, 12], [8, 12],
             [11, 12], [12, 12],
             [14, 12], [15, 12],
-            // Untere Bereiche
             [2, 14], [3, 14],
             [5, 14], [6, 14],
             [9, 14], [10, 14], [11, 14],
@@ -220,10 +206,8 @@ export const LEVELS = [
             [6, 15], [7, 15],
             [10, 15], [11, 15],
             [14, 15], [15, 15]
-            // [15, 16] und [16, 15] frei für Zugang zum Ziel
         ],
         holes: [
-            // Completely new hole pattern – follows the zig-zag layout
             [5, 2], [11, 2],
             [2, 4], [8, 4], [14, 4],
             [5, 6], [12, 6],
@@ -241,13 +225,10 @@ export const LEVELS = [
         start: [1, 1],
         goal: [18, 18],
         walls: [
-            // Outer border walls
             ...Array.from({ length: 20 }, (_, i) => [i, 0]),
             ...Array.from({ length: 20 }, (_, i) => [i, 19]),
             ...Array.from({ length: 20 }, (_, i) => [0, i]),
             ...Array.from({ length: 20 }, (_, i) => [19, i]),
-            // Completely new design – cross shaped pattern in the center
-            // Central vertical column
             [1, 8], [2, 8],
             [9, 2], [9, 3], [9, 4],
             [10, 2], [10, 3], [10, 4],
@@ -257,44 +238,34 @@ export const LEVELS = [
             [10, 11], [10, 12], [10, 13],
             [9, 15], [9, 16], [9, 17],
             [10, 15], [10, 16], [10, 17],
-            // Zentrale horizontale Linie
             [2, 9], [4, 9], [5, 9], [6, 9], [7, 9], [8, 9], [4, 10],
             [11, 9], [12, 9], [13, 9], [14, 9], [15, 9], [16, 9], [17, 9],
-            // Upper left corner
             [2, 1], [2, 2],
             [4, 1], [4, 2], [4, 3],
             [6, 1],
-            // Upper right corner
             [15, 1], [15, 2],
             [17, 1], [17, 2], [17, 3],
             [13, 1],
-            // Lower left corner
             [2, 17], [2, 18],
             [4, 16], [4, 17], 
             [6, 18],
-            // Lower right corner
             [15, 17], [15, 18],
             [17, 16], [17, 17], [17, 18],
             [13, 18], [12, 10],
-            // Middle left barriers
             [3, 5], [3, 6],
             [5, 5], [5, 6], [5, 7],
             [7, 4], [7, 5],
-            // Middle right barriers
             [14, 5], [14, 6],
             [16, 5], [16, 6], [16, 7],
             [12, 4], [12, 5],
-            // Lower middle barriers
             [3, 13], [3, 14],
             [5, 12], [5, 13], [5, 14],
             [7, 14], [7, 15],
             [12, 14], [12, 15],
             [14, 13], [14, 14],
             [16, 12], [16, 13], [16, 14], [6, 17]
-            // [17, 18] und [18, 17] frei für Zugang zum Ziel
         ],
         holes: [
-            // Completely new hole pattern – follows the central cross
             [3, 3], [7, 3], [13, 3], [16, 3],
             [2, 6], [6, 6], [14, 6], [17, 6],
             [4, 8], [7, 8], [12, 8], [15, 8],
@@ -329,7 +300,7 @@ function cloneGrid(grid) {
  * the physics, renderer, and UI subsystems.
  *
  * @param {RawLevel} base
- * @returns {Object} hydrated level info
+ * @returns {LevelData} hydrated level info
  */
 function hydrateLevel(base) {
     const grid = createGrid(base.width, base.height);
@@ -366,6 +337,7 @@ function hydrateLevel(base) {
 /**
  * Retrieve a specific level definition (1-indexed).
  * @param {number} levelNumber
+ * @returns {LevelData}
  */
 export function getLevelData(levelNumber) {
     const base = LEVELS[levelNumber - 1];

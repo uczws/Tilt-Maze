@@ -1,15 +1,21 @@
 <!DOCTYPE html>
+<!-- Root document for the Tilt Maze HTML5 game. Sets up layout, HUD, screens and canvas. -->
 <html lang="en">
 <head>
+    <!-- Basic document meta configuration -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="description" content="HTML5 tilt-controlled maze game that uses DeviceOrientation sensors and Canvas rendering.">
     <title>Tilt Maze</title>
+    <!-- Global game styling -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Main wrapper around all game UI and screens -->
     <div id="game-container">
+        <!-- Primary game screen containing the HUD and board -->
         <div id="game-screen" aria-live="polite">
+            <!-- Top HUD bar showing lives, level and quick actions -->
             <header class="hud-bar" aria-label="Game status bar">
                 <div class="hud-stat">
                     <span class="hud-label">Lives</span>
@@ -34,23 +40,27 @@
                 </div>
             </header>
 
+            <!-- Game board area with canvas and mobile controls -->
             <main class="board-wrapper">
                 <canvas id="game-canvas" width="800" height="800" aria-label="Labyrinth board"></canvas>
-                <!-- Mobile: Buttons unten als quadratische Buttons -->
+                <!-- Mobile-only bottom action buttons as square controls -->
                 <div class="mobile-bottom-buttons mobile-only">
                     <button id="calibrate-button-mobile" class="mobile-square-button" type="button">Calibrate</button>
                 </div>
             </main>
         </div>
 
+        <!-- Message prompting users to rotate to landscape on mobile devices -->
         <div id="orientation-message" class="orientation-message" role="status" aria-live="assertive">
             <p>Please rotate your device to landscape for the best experience.</p>
         </div>
 
+        <!-- Temporary status shown while sensor calibration is running -->
         <div id="calibration-message" class="calibration-message" role="status">
             <p>Calibrating sensors — keep the device steady…</p>
         </div>
 
+        <!-- Initial start screen with game title and instructions -->
         <section id="start-screen" class="screen active" aria-label="Start screen">
             <div class="screen-content">
                 <h1>Tilt Maze</h1>
@@ -70,6 +80,7 @@
             </div>
         </section>
 
+        <!-- Pause overlay shown when the game is paused -->
         <section id="pause-screen" class="screen overlay" aria-label="Pause menu">
             <div class="screen-content">
                 <h2>Game Paused</h2>
@@ -78,6 +89,7 @@
             </div>
         </section>
 
+        <!-- Win overlay shown after successfully completing a level -->
         <section id="win-screen" class="screen overlay" aria-label="Win screen">
             <div class="screen-content">
                 <h2>Level Complete!</h2>
@@ -88,6 +100,7 @@
             </div>
         </section>
 
+        <!-- Lose overlay shown when the player falls into a hole or fails the level -->
         <section id="lose-screen" class="screen overlay" aria-label="Lose screen">
             <div class="screen-content">
                 <h2>Fell Into A Hole</h2>
@@ -97,6 +110,7 @@
             </div>
         </section>
 
+        <!-- Mobile-only burger menu overlay with quick navigation actions -->
         <section id="burger-menu-screen" class="screen overlay mobile-only" aria-label="Burger menu">
             <div class="screen-content">
                 <h2>Menu</h2>
@@ -107,6 +121,7 @@
             </div>
         </section>
 
+        <!-- Mobile-only level selection overlay with a grid of levels -->
         <section id="level-select-screen-mobile" class="screen overlay mobile-only" aria-label="Level selection">
             <div class="screen-content">
                 <h2>Select Level</h2>
@@ -116,6 +131,7 @@
         </section>
     </div>
 
+    <!-- Main game logic entry point (ES module) -->
     <script type="module" src="./game.js"></script>
 </body>
 </html>

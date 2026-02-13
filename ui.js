@@ -1,17 +1,42 @@
 /**
- * =============================================================
- * UI Module
- * -------------------------------------------------------------
- * Manages overlays, HUD updates, level selection, orientation
- * warnings, and calibration messaging.
- * =============================================================
+ * @file ui.js
+ * @description UI layer for Tilt Maze.
+ *
+ * This module is responsible for:
+ * - Showing/hiding overlay screens (start, pause, win, lose, burger menu)
+ * - Updating the HUD (level name, lives, optional timer)
+ * - Building the level selection grid and locking/unlocking levels
+ * - Displaying sensor/orientation/calibration messages
+ *
+ * The UI communicates back to the game engine via callbacks passed to the constructor.
  */
 
 import { MAX_LIVES } from './constants.js';
 
 const DEFAULT_HANDLER = () => {};
 
+/**
+ * Manages all DOM updates and overlay flows.
+ *
+ * Required DOM elements are referenced by id (see index.html):
+ * - Screens: start-screen, pause-screen, win-screen, lose-screen, burger-menu-screen, level-select-screen-mobile
+ * - HUD: level-display, lives-display (optional: time-display, sensor-status)
+ * - Buttons: start-button, pause-button, resume-button, restart-button, menu-button, etc.
+ */
 export class UIManager {
+    /**
+     * @param {Object} options
+     * @param {number} options.totalLevels Total number of levels available.
+     * @param {(level:number)=>void} [options.onStart] Called when the user starts the game.
+     * @param {(level:number)=>void} [options.onSelectLevel] Called when the user selects a level.
+     * @param {()=>void} [options.onPause]
+     * @param {()=>void} [options.onResume]
+     * @param {()=>void} [options.onRestart]
+     * @param {()=>void} [options.onMenu]
+     * @param {()=>void} [options.onNextLevel]
+     * @param {()=>void} [options.onRetry]
+     * @param {()=>Promise<void>|void} [options.onCalibrate]
+     */
     constructor({
         totalLevels,
         onStart = DEFAULT_HANDLER,
@@ -52,7 +77,7 @@ export class UIManager {
             burgerMenu: document.getElementById('burger-menu-screen'),
             levelSelectMobile: document.getElementById('level-select-screen-mobile')
         };
-        // if needed
+        // HUD elements
         this.hud = {
             levelDisplay: document.getElementById('level-display'),
             timeDisplay: document.getElementById('time-display'),
@@ -318,6 +343,10 @@ export class UIManager {
         this.updateGameScreenPointerEvents();
     }
 
+    /**
+     * Updates the in-game HUD. All fields are optional; only provided values are updated.
+     * @param {{levelNumber?:number, levelName?:string, timeSeconds?:number, lives?:number}} data
+     */
     updateHUD({ levelNumber, levelName, timeSeconds, lives }) {
         if (typeof levelNumber === 'number') {
             this.currentLevel = levelNumber;
@@ -336,22 +365,38 @@ export class UIManager {
         }
     }
 
+    /**
+     * Displays a short status message about sensor availability/permission.
+     * @param {string} message
+     */
     updateSensorStatus(message) {
         if (this.hud.sensorStatus) {
             this.hud.sensorStatus.textContent = message;
         }
     }
 
+    /**
+     * Shows/hides the orientation warning (used on small screens in portrait).
+     * @param {boolean} visible
+     */
     setOrientationWarning(visible) {
         if (!this.messages.orientation) return;
         this.messages.orientation.classList.toggle('active', visible);
     }
 
+    /**
+     * Shows/hides the calibration overlay.
+     * @param {boolean} visible
+     */
     setCalibrationMessage(visible) {
         if (!this.messages.calibration) return;
         this.messages.calibration.classList.toggle('active', visible);
     }
 
+    /**
+     * Shows the win overlay and updates the win message.
+     * @param {{timeSeconds:number, bestTime:number, isNewRecord:boolean, showNextButton:boolean, isFinalLevel:boolean}} data
+     */
     showWinScreen({ timeSeconds, bestTime, isNewRecord = false, showNextButton = true, isFinalLevel = false }) {
         if (this.messages.winMessage) {
             let message = '';
@@ -484,6 +529,10 @@ export class UIManager {
         this.confetti = { canvas: null, raf: null, endTime: 0, lastTs: 0, particles: [], resize: null };
     }
 
+    /**
+     * Shows the lose overlay.
+     * @param {{allLivesLost:boolean}} data
+     */
     showLoseScreen({ allLivesLost = false } = {}) {
         if (this.messages.loseMessage) {
             if (allLivesLost) {
@@ -495,6 +544,10 @@ export class UIManager {
         this.showScreen('lose');
     }
 
+    /**
+     * Marks a level as completed and refreshes the level button states.
+     * @param {number} levelNumber
+     */
     markLevelCompleted(level) {
         this.completedLevels.add(level);
         if (level === this.unlockedLevel && this.unlockedLevel < this.totalLevels) {
@@ -503,6 +556,10 @@ export class UIManager {
         this.updateLevelButtonStates();
     }
 
+    /**
+     * Resets UI state for a fresh run (locks levels and clears completion markers).
+     * Note: The game engine is responsible for clearing localStorage.
+     */
     resetProgress() {
         this.completedLevels.clear();
         this.unlockedLevel = 1;
@@ -540,6 +597,10 @@ export class UIManager {
         });
     }
     
+    /**
+     * Updates best-time labels shown in the level picker.
+     * @param {Record<number, number>} bestTimes Map: levelNumber -> bestTime (seconds)
+     */
     updateBestTimes(bestTimes) {
         this.bestTimes = bestTimes || {};
         this.updateLevelButtonStates();

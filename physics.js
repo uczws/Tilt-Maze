@@ -1,18 +1,21 @@
 /**
- * =============================================================
- * Physics Module
- * -------------------------------------------------------------
- * Handles numeric integration of the ball, collision response,
- * and detection of holes and goals. The game board is expressed
- * in grid units, so the physics runs entirely in cell space.
- * =============================================================
+ * @file physics.js
+ * @description Grid-based physics for Tilt Maze.
+ *
+ * The board is represented as a 2D grid of numeric cell types.
+ * The ball moves in continuous "cell space" (1 unit = 1 cell).
+ *
+ * Responsibilities:
+ * - Integrate velocity with friction
+ * - Resolve collisions against wall cells
+ * - Detect holes and goal reach
  */
 
 import { CELL_TYPES } from './constants.js';
 export { CELL_TYPES };
 
 /**
- * Represents the brass ball rolling around the wooden maze.
+ * Represents the brass ball rolling around the maze.
  * Velocity values are stored in grid units per frame.
  */
 export class BallState {
@@ -77,7 +80,7 @@ export class BallState {
         if (Math.abs(this.vx) < 0.001) this.vx = 0;
         if (Math.abs(this.vy) < 0.001) this.vy = 0;
         
-        // Aktualisiere Position basierend auf Geschwindigkeit
+        // Update position based on velocity.
         this.x += this.vx;
         this.y += this.vy;
     }

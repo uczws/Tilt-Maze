@@ -1,9 +1,17 @@
-/* =============================================================
-   Modern Minimalist Tilt Maze - Responsive Stylesheet
-   - Clean, flat design with modern colors
-   - Minimal shadows and geometric shapes
-   - Supports overlays for menus, level selection, pause states
-   ============================================================= */
+/* ==========================================================================
+   @file styles.css
+   Tilt Maze - responsive stylesheet (mobile + desktop)
+
+   Structure:
+   1) Design tokens (:root)
+   2) Global reset + layout containers
+   3) HUD / status bar
+   4) Canvas board layout
+   5) Buttons
+   6) Overlays / screens (start, pause, win, lose)
+   7) Level picker (HUD dropdown + mobile screen)
+   8) Mobile-specific tweaks (<= 768px) and accessibility helpers
+   ========================================================================== */
 
 :root {
     --bg-primary: #e8f4f8;
@@ -153,7 +161,7 @@ body {
     display: none;
 }
 
-/* Mobile: nur Nicht-Screens als .mobile-only automatisch anzeigen */
+/* Mobile: only non-screen elements with .mobile-only are auto-shown */
 @media (max-width: 768px) {
     .mobile-only:not(.screen) {
         display: block !important;
@@ -346,7 +354,7 @@ h2 {
     gap: 15px;
 }
 
-/* Burger-Menü: Mehr Abstand zwischen Buttons auf Mobile */
+/* Burger menu: add more spacing between buttons on mobile */
 @media (max-width: 768px) {
     #burger-menu-screen .screen-content {
         display: flex;
@@ -359,7 +367,7 @@ h2 {
     }
 }
 
-/* Level Select Dropdown im HUD */
+/* Level select dropdown in the HUD */
 .level-select-wrapper {
     position: relative;
     display: inline-block;
@@ -470,7 +478,7 @@ h2 {
     color: var(--text-light);
 }
 
-/* Scrollbar für Level-Grid im HUD */
+/* Scrollbar for level grid in the HUD */
 .level-grid-hud::-webkit-scrollbar {
     width: 6px;
 }
@@ -516,7 +524,7 @@ h2 {
     display: block;
 }
 
-/* Verstecke Orientierungsnachricht auf Handys */
+/* Hide orientation message on small mobile devices */
 @media (max-width: 768px) {
     .orientation-message {
         display: none !important;
@@ -548,14 +556,14 @@ h2 {
 }
 
 @media (max-width: 768px) {
-    /* Verstecke Game-Screen wenn Start-Screen aktiv ist */
+    /* Hide main game screen while start screen is active */
     #game-container.start-active #game-screen {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
     }
 
-    /* Start-Screen soll vollständigen Hintergrund haben */
+    /* Make the start screen cover the full background */
     #start-screen.active {
         background: var(--bg-secondary) !important;
     }
@@ -594,12 +602,12 @@ h2 {
     }
     
     .hud-bar > .hud-stat:nth-child(1) {
-        /* Life - ganz links */
+        /* Lives - pinned to the left */
         flex: 0 0 auto;
     }
     
     .hud-bar > .hud-stat:nth-child(2) {
-        /* Level - in der Mitte */
+        /* Level info - centered */
         flex: 1 1 auto;
         text-align: center;
         margin: 0 auto;
@@ -612,7 +620,7 @@ h2 {
     }
     
     .hud-bar > .hud-stat:nth-child(1) .hud-label {
-        /* Life Label - größer auf Mobile */
+        /* Lives label - slightly larger on mobile */
         font-size: 0.8rem;
     }
 
@@ -627,17 +635,17 @@ h2 {
     }
     
     .hud-bar > .hud-stat:nth-child(1) strong {
-        /* Life - größer auf Mobile */
+        /* Lives value - larger on mobile */
         font-size: 1.4rem;
     }
     
     .hud-bar > .hud-stat:nth-child(2) .hud-label {
-        /* Level Label - größer auf Mobile */
+        /* Level label - slightly larger on mobile */
         font-size: 0.8rem;
     }
     
     .hud-bar > .hud-stat:nth-child(2) strong {
-        /* Level Name - größer auf Mobile */
+        /* Level name - larger on mobile */
         font-size: 1.2rem;
     }
 
@@ -669,7 +677,7 @@ h2 {
         display: none !important;
     }
 
-    /* Mobile: Buttons unten als quadratische Buttons */
+    /* Mobile: bottom action bar with square buttons */
     .mobile-bottom-buttons {
         display: flex;
         justify-content: center;
@@ -769,7 +777,7 @@ h2 {
         text-align: center;
     }
     
-    /* Level Select Screen Mobile */
+    /* Level select screen layout for mobile */
     #level-select-screen-mobile .level-grid-hud {
         grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
         gap: 10px;
