@@ -142,22 +142,25 @@ export class InputController {
     setupDeviceOrientation() {
         const hasOrientation = typeof window.DeviceOrientationEvent !== 'undefined';
         const hasMotion = typeof window.DeviceMotionEvent !== 'undefined';
+        const useOrientation = hasOrientation;
+        const useMotion = !hasOrientation && hasMotion; // Motion nur als Fallback
         
         // Keine Sensoren verfügbar → Tastatur-Modus
-        if (!hasOrientation && !hasMotion) {
+        if (!useOrientation && !useMotion) {
             this.callbacks.onSensorStatus('Motion sensors not supported. Keyboard mode only.');
             this.switchMode('keyboard');
             return;
         }
 
         // Prüft, ob eine Berechtigung benötigt wird (iOS 13+)
-        const needsPermission = (hasOrientation && typeof DeviceOrientationEvent.requestPermission === 'function') ||
-                               (hasMotion && typeof DeviceMotionEvent.requestPermission === 'function');
+        const needsPermission =
+            (useOrientation && typeof DeviceOrientationEvent.requestPermission === 'function') ||
+            (useMotion && typeof DeviceMotionEvent.requestPermission === 'function');
         
         if (needsPermission) {
             this.callbacks.onSensorStatus('Tap "Start Adventure" to enable motion controls.');
         } else {
-            this.registerSensorListeners(hasOrientation, hasMotion);
+            this.registerSensorListeners(useOrientation, useMotion);
             this.deviceOrientationActive = true;
             this.callbacks.onSensorStatus('Tilt controls ready.');
             this.switchMode('sensor');
@@ -166,14 +169,13 @@ export class InputController {
 
     /**
      * Registriert DeviceOrientation/DeviceMotion Event-Listener
-     * @param {boolean} hasOrientation
-     * @param {boolean} hasMotion
+     * @param {boolean} useOrientation
+     * @param {boolean} useMotion
      */
-    registerSensorListeners(hasOrientation, hasMotion) {
-        if (hasOrientation) {
+    registerSensorListeners(useOrientation, useMotion) {
+        if (useOrientation) {
             window.addEventListener('deviceorientation', this.handleOrientation, { passive: true });
-        }
-        if (hasMotion) {
+        } else if (useMotion) {
             window.addEventListener('devicemotion', this.handleMotion, { passive: true });
         }
     }
@@ -284,8 +286,10 @@ export class InputController {
 
         const hasOrientation = typeof DeviceOrientationEvent !== 'undefined';
         const hasMotion = typeof DeviceMotionEvent !== 'undefined';
+        const useOrientation = hasOrientation;
+        const useMotion = !hasOrientation && hasMotion; // Motion nur als Fallback
         // Weder Orientation noch Motion verfügbar → Tastatur-/Touch-Modus
-        if (!hasOrientation && !hasMotion) {
+        if (!useOrientation && !useMotion) {
             this.callbacks.onSensorStatus('Using keyboard/touch controls.');
             this.switchMode('keyboard');
             return false;
@@ -293,8 +297,8 @@ export class InputController {
 
         try {
             // Prüft, ob requestPermission verfügbar ist (iOS 13+)
-            const needsOriPermission = hasOrientation && typeof DeviceOrientationEvent.requestPermission === 'function';
-            const needsMotPermission = hasMotion && typeof DeviceMotionEvent.requestPermission === 'function';
+            const needsOriPermission = useOrientation && typeof DeviceOrientationEvent.requestPermission === 'function';
+            const needsMotPermission = useMotion && typeof DeviceMotionEvent.requestPermission === 'function';
 
             if (needsOriPermission || needsMotPermission) {
                 this.callbacks.onSensorStatus('Tap "Allow" in the popup to enable tilt controls.');
@@ -303,7 +307,7 @@ export class InputController {
                 const granted = (ori === 'granted') || (mot === 'granted');
 
                 if (granted) {
-                    this.registerSensorListeners(hasOrientation, hasMotion);
+                    this.registerSensorListeners(useOrientation, useMotion);
                     this.deviceOrientationActive = true;
                     this.callbacks.onSensorStatus('Tilt controls enabled! Try tilting your device.');
                     this.switchMode('sensor');
@@ -315,7 +319,7 @@ export class InputController {
                 this.switchMode('keyboard');
                 return false;
             } else {
-                this.registerSensorListeners(hasOrientation, hasMotion);
+                this.registerSensorListeners(useOrientation, useMotion);
                 this.deviceOrientationActive = true;
                 this.callbacks.onSensorStatus('Tilt controls ready (if supported).');
                 this.switchMode('sensor');
