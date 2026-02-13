@@ -62,7 +62,7 @@ export const LEVELS = [
         start: [1, 1],
         goal: [10, 10],
         walls: [
-            // Außenwände
+            // Outer border walls
             ...Array.from({ length: 12 }, (_, i) => [i, 0]),
             ...Array.from({ length: 12 }, (_, i) => [i, 11]),
             ...Array.from({ length: 12 }, (_, i) => [0, i]),
@@ -79,7 +79,7 @@ export const LEVELS = [
             [7, 8], [8, 8], [9, 8]
         ],
         holes: [
-            // Strategisch platzierte Löcher
+            // Strategically placed holes to punish greedy shortcuts
             [10, 5],
             [4, 3], [7, 3],
             [5, 6],
@@ -123,13 +123,13 @@ export const LEVELS = [
         start: [1, 1],
         goal: [14, 14],
         walls: [
-            // Außenwände
+            // Outer border walls
             ...Array.from({ length: 16 }, (_, i) => [i, 0]),
             ...Array.from({ length: 16 }, (_, i) => [i, 15]),
             ...Array.from({ length: 16 }, (_, i) => [0, i]),
             ...Array.from({ length: 16 }, (_, i) => [15, i]),
-            // Neues Design - Spiral-ähnliches Labyrinth
-            // Linke Seite - vertikale Blöcke
+            // New design – spiral-like labyrinth with narrow corridors
+            // Left side – vertical blocking segments
             [3, 1], [3, 2], [3, 3],
             [6, 1], [6, 2],
             [9, 1], [9, 2], [9, 3],
@@ -156,7 +156,7 @@ export const LEVELS = [
             // [13, 14] und [14, 13] frei für Zugang zum Ziel
         ],
         holes: [
-            // Strategisch platzierte Löcher - mehr als Level 3
+            // Strategically placed holes – denser than Level 3
             [5, 3], [8, 5],
             [4, 7], [11, 7],
             [8, 9], [12, 9],
@@ -172,27 +172,27 @@ export const LEVELS = [
         start: [1, 1],
         goal: [16, 16],
         walls: [
-            // Außenwände
+            // Outer border walls
             ...Array.from({ length: 18 }, (_, i) => [i, 0]),
             ...Array.from({ length: 18 }, (_, i) => [i, 17]),
             ...Array.from({ length: 18 }, (_, i) => [0, i]),
             ...Array.from({ length: 18 }, (_, i) => [17, i]),
-            // Komplett neues Design - Zick-Zack Muster
-            // Obere linke Ecke - kleine Blöcke
+            // Completely new design – zig-zag style maze
+            // Upper left section – small blocking clusters
             [2, 1], [2, 2],
             [4, 1],
             [6, 1], [6, 2],
-            // Obere rechte Ecke - andere Struktur
+            // Upper right section – asymmetric structure
             [13, 1], [13, 2], [13, 3],
             [15, 1], [15, 2],
             // Zentrale obere Barrieren
             [4, 3], [5, 3],
             [8, 3], [9, 3], [10, 3],
             [12, 3],
-            // Mittlere linke Seite
+            // Middle left section
             [1, 5], [2, 5], [3, 5],
             [5, 5], [6, 5],
-            // Mittlere rechte Seite
+            // Middle right section
             [12, 5], [13, 5], [14, 5],
             [16, 5],
             // Zentrale vertikale Barrieren
@@ -205,7 +205,7 @@ export const LEVELS = [
             [6, 10], [7, 10],
             [9, 10], [10, 10],
             [12, 10], [13, 10], [14, 10],
-            // Untere mittlere Barrieren
+            // Lower middle barriers
             [3, 12], [4, 12],
             [6, 12], [7, 12], [8, 12],
             [11, 12], [12, 12],
@@ -223,7 +223,7 @@ export const LEVELS = [
             // [15, 16] und [16, 15] frei für Zugang zum Ziel
         ],
         holes: [
-            // Komplett neue Lochplatzierung - Zick-Zack Muster
+            // Completely new hole pattern – follows the zig-zag layout
             [5, 2], [11, 2],
             [2, 4], [8, 4], [14, 4],
             [5, 6], [12, 6],
@@ -241,13 +241,13 @@ export const LEVELS = [
         start: [1, 1],
         goal: [18, 18],
         walls: [
-            // Außenwände
+            // Outer border walls
             ...Array.from({ length: 20 }, (_, i) => [i, 0]),
             ...Array.from({ length: 20 }, (_, i) => [i, 19]),
             ...Array.from({ length: 20 }, (_, i) => [0, i]),
             ...Array.from({ length: 20 }, (_, i) => [19, i]),
-            // Komplett neues Design - Kreuz-Muster
-            // Zentrale vertikale Säule
+            // Completely new design – cross shaped pattern in the center
+            // Central vertical column
             [1, 8], [2, 8],
             [9, 2], [9, 3], [9, 4],
             [10, 2], [10, 3], [10, 4],
@@ -260,31 +260,31 @@ export const LEVELS = [
             // Zentrale horizontale Linie
             [2, 9], [4, 9], [5, 9], [6, 9], [7, 9], [8, 9], [4, 10],
             [11, 9], [12, 9], [13, 9], [14, 9], [15, 9], [16, 9], [17, 9],
-            // Linke obere Ecke
+            // Upper left corner
             [2, 1], [2, 2],
             [4, 1], [4, 2], [4, 3],
             [6, 1],
-            // Rechte obere Ecke
+            // Upper right corner
             [15, 1], [15, 2],
             [17, 1], [17, 2], [17, 3],
             [13, 1],
-            // Linke untere Ecke
+            // Lower left corner
             [2, 17], [2, 18],
             [4, 16], [4, 17], 
             [6, 18],
-            // Rechte untere Ecke
+            // Lower right corner
             [15, 17], [15, 18],
             [17, 16], [17, 17], [17, 18],
             [13, 18], [12, 10],
-            // Mittlere linke Barrieren
+            // Middle left barriers
             [3, 5], [3, 6],
             [5, 5], [5, 6], [5, 7],
             [7, 4], [7, 5],
-            // Mittlere rechte Barrieren
+            // Middle right barriers
             [14, 5], [14, 6],
             [16, 5], [16, 6], [16, 7],
             [12, 4], [12, 5],
-            // Untere mittlere Barrieren
+            // Lower middle barriers
             [3, 13], [3, 14],
             [5, 12], [5, 13], [5, 14],
             [7, 14], [7, 15],
@@ -294,7 +294,7 @@ export const LEVELS = [
             // [17, 18] und [18, 17] frei für Zugang zum Ziel
         ],
         holes: [
-            // Komplett neue Lochplatzierung - Kreuz-Muster
+            // Completely new hole pattern – follows the central cross
             [3, 3], [7, 3], [13, 3], [16, 3],
             [2, 6], [6, 6], [14, 6], [17, 6],
             [4, 8], [7, 8], [12, 8], [15, 8],

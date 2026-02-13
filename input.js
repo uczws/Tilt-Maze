@@ -1,51 +1,51 @@
 /**
  * =============================================================
- * Input Module (Eingabemodul)
+ * Input Module
  * -------------------------------------------------------------
- * 
- * ZWECK:
- * Dieses Modul verwaltet alle Eingabemethoden für das Tilt Maze Spiel.
- * Es normalisiert Sensordaten (Neigungssensor, Beschleunigungssensor) und
- * bietet Fallback-Methoden (Tastatur, Touch), sodass die Physik-Engine
- * immer Neigungswerte im Bereich [-1, 1] erhält.
- * 
- * EINGABEMETHODEN:
- * 1. DeviceOrientation (Neigungssensor) - Primär für mobile Geräte
- *    - Misst die Neigung des Geräts in Grad (beta = Vor-/Zurückneigung, gamma = Links/Rechts)
- *    - Wird automatisch aktiviert, wenn verfügbar
- *    - Benötigt auf iOS 13+ eine Benutzerberechtigung
- * 
- * 2. DeviceMotion (Beschleunigungssensor) - Alternative für Geräte ohne DeviceOrientation
- *    - Misst die Beschleunigung inkl. Gravitation (m/s²)
- *    - Wird verwendet, wenn DeviceOrientation nicht verfügbar ist
- * 
- * 3. Tastatur (Fallback) - Für Desktop/PC
- *    - Pfeiltasten oder WASD
- *    - Wird automatisch aktiviert, wenn keine Sensoren verfügbar sind
- * 
- * 4. Touch (Fallback) - Für Geräte ohne Sensoren
- *    - Wischen auf dem Canvas steuert die Neigung
- *    - Wird verwendet, wenn weder Sensoren noch Tastatur aktiv sind
- * 
- * KALIBRIERUNG:
- * - Ermöglicht es, die aktuelle Geräteposition als "neutral" zu setzen
- * - Speichert die aktuellen beta/gamma Werte als Offset
- * - Alle nachfolgenden Sensordaten werden um diesen Offset korrigiert
- * 
- * NORMALISIERUNG:
- * - Konvertiert Sensordaten (Grad oder m/s²) in normalisierte Werte [-1, 1]
- * - DeviceOrientation: maxDegrees = 45° (maximale Neigung)
- * - DeviceMotion: maxDegrees = 9.8 m/s² (Erdbeschleunigung)
- * 
- * GLÄTTUNG:
- * - Verwendet lineare Interpolation (Lerp) für sanfte Bewegungen
- * - Sensor-Modus: smoothing = 0.4 (schnellere Reaktion)
- * - Tastatur-Modus: smoothing = 0.75 (langsamere, kontrolliertere Bewegung)
- * 
- * MODI:
- * - 'sensor': Aktive Sensoren (DeviceOrientation oder DeviceMotion)
- * - 'keyboard': Tastatur- oder Touch-Steuerung
- * 
+ *
+ * PURPOSE:
+ * Central module that manages all input methods for the Tilt Maze game.
+ * It normalizes sensor data (orientation and motion) and exposes
+ * keyboard/touch fallbacks so that the physics engine always receives
+ * tilt values in the range [-1, 1].
+ *
+ * INPUT METHODS:
+ * 1. DeviceOrientation (tilt sensor) – primary for mobile devices
+ *    - Measures device tilt in degrees (beta = front/back tilt, gamma = left/right tilt)
+ *    - Is used automatically when available
+ *    - Requires explicit user permission on iOS 13+
+ *
+ * 2. DeviceMotion (accelerometer) – alternative when DeviceOrientation is not available
+ *    - Measures acceleration including gravity (m/s²)
+ *    - Is only used as a fallback if DeviceOrientation cannot be used
+ *
+ * 3. Keyboard (fallback) – for desktop / laptops
+ *    - Arrow keys or WASD
+ *    - Is used automatically when no motion sensors are available
+ *
+ * 4. Touch (fallback) – for devices without motion sensors
+ *    - Swiping on the canvas controls the tilt direction
+ *    - Is used when neither sensors nor keyboard input are active
+ *
+ * CALIBRATION:
+ * - Allows treating the current device orientation as the neutral position
+ * - Stores the current beta/gamma values as offsets
+ * - All subsequent sensor readings are corrected by this offset
+ *
+ * NORMALIZATION:
+ * - Converts sensor readings (degrees or m/s²) into normalized values [-1, 1]
+ * - DeviceOrientation: maxDegrees = 45° (maximum considered tilt)
+ * - DeviceMotion: maxDegrees = 9.8 m/s² (gravity on Earth)
+ *
+ * SMOOTHING:
+ * - Uses linear interpolation (lerp) for smooth movement
+ * - Sensor mode: smoothing = 0.4 (faster reactions)
+ * - Keyboard mode: smoothing = 0.75 (slower, more controlled motion)
+ *
+ * MODES:
+ * - 'sensor': active motion sensors (DeviceOrientation or DeviceMotion)
+ * - 'keyboard': keyboard- or touch-driven control
+ *
  * =============================================================
  */
 
@@ -67,15 +67,15 @@ const SUPPORTED_KEYS = Object.keys(KEY_MAP);
 
 export class InputController {
     /**
-     * Konstruktor - Initialisiert den InputController
-     * @param {Object} callbacks - Callback-Funktionen für UI-Updates
-     *   - onModeChange: Wird aufgerufen, wenn sich der Eingabemodus ändert
-     *   - onSensorStatus: Wird aufgerufen, um Sensor-Status anzuzeigen
-     *   - onCalibrationStart: Wird aufgerufen, wenn Kalibrierung startet
-     *   - onCalibrationEnd: Wird aufgerufen, wenn Kalibrierung endet
+     * Constructor - initializes the InputController.
+     * @param {Object} callbacks - callback functions for UI updates
+     *   - onModeChange: called whenever the input mode changes
+     *   - onSensorStatus: called to display sensor status messages
+     *   - onCalibrationStart: called when calibration starts
+     *   - onCalibrationEnd: called when calibration ends
      */
     constructor(callbacks = {}) {
-        // Callback-Funktionen für UI-Kommunikation
+        // Callback functions used to communicate back to the UI
         this.callbacks = {
             onModeChange: callbacks.onModeChange || DEFAULT_CALLBACK,
             onSensorStatus: callbacks.onSensorStatus || DEFAULT_CALLBACK,
@@ -83,46 +83,46 @@ export class InputController {
             onCalibrationEnd: callbacks.onCalibrationEnd || DEFAULT_CALLBACK
         };
         
-        // Aktuelle Neigungswerte (normalisiert, Bereich [-1, 1])
+        // Current tilt values (normalized, range [-1, 1])
         this.tilt = { x: 0, y: 0 };
         
-        // Aktueller Eingabemodus: 'sensor' oder 'keyboard'
+        // Current input mode: 'sensor' or 'keyboard'
         this.mode = 'sensor';
         
-        // Kalibrierungs-Offset (wird von aktuellen Sensordaten abgezogen)
+        // Calibration offset (subtracted from raw sensor values)
         this.calibration = { beta: 0, gamma: 0 };
         
-        // Ob die Kalibrierung aktiv ist
+        // Whether calibration has been applied at least once
         this.isCalibrated = false;
         
-        // Ob DeviceOrientation/DeviceMotion aktiv ist
+        // Whether DeviceOrientation/DeviceMotion listeners are active
         this.deviceOrientationActive = false;
         
-        // Zustand der Tastaturtasten (für Keyboard-Modus)
+        // Keyboard key state (for keyboard mode)
         this.keys = { up: false, down: false, left: false, right: false };
         
-        // Letzte Sensordaten (für Kalibrierung)
+        // Last raw orientation values (used during calibration)
         this.lastOrientation = { beta: 0, gamma: 0 };
         
-        // Touch-Steuerung: Startposition beim Wischen
+        // Touch control: initial finger position for swipe gestures
         this.touchStartX = 0;
         this.touchStartY = 0;
         this.touchActive = false;
         
-        // Initialisierung: Event-Listener einrichten
+        // Initialization: set up all event listeners
         this.init();
     }
 
     /**
-     * Initialisierung - Richtet alle Eingabemethoden ein
-     * Prüft, welche Eingabemethoden verfügbar sind und aktiviert sie entsprechend
+     * Initializes all supported input methods.
+     * Detects what is available on the current device and enables it.
      */
     init() {
         this.setupDeviceOrientation();
         this.setupKeyboardControls();
         this.setupTouchControls();
         
-        // Wenn keine Sensoren verfügbar sind, sofort auf Tastatur-Modus wechseln
+        // If no motion sensors are available, immediately fall back to keyboard mode
         if (!window.DeviceOrientationEvent && !window.DeviceMotionEvent) {
             this.switchMode('keyboard');
         } else {
@@ -131,21 +131,21 @@ export class InputController {
     }
 
     /**
-     * Richtet DeviceOrientation und DeviceMotion Event-Listener ein
-     * 
-     * Prüft, welche Sensoren verfügbar sind:
-     * - DeviceOrientation: Misst Neigung in Grad (beta, gamma)
-     * - DeviceMotion: Misst Beschleunigung in m/s² (Fallback)
-     * 
-     * Auf iOS 13+ wird eine Benutzerberechtigung benötigt (requestPermission)
+     * Sets up DeviceOrientation and DeviceMotion event listeners.
+     *
+     * Checks which sensors are available:
+     * - DeviceOrientation: measures tilt in degrees (beta, gamma)
+     * - DeviceMotion: measures acceleration in m/s² (fallback)
+     *
+     * On iOS 13+ an explicit permission dialog is required (requestPermission).
      */
     setupDeviceOrientation() {
         const hasOrientation = typeof window.DeviceOrientationEvent !== 'undefined';
         const hasMotion = typeof window.DeviceMotionEvent !== 'undefined';
         const useOrientation = hasOrientation;
-        const useMotion = !hasOrientation && hasMotion; // Motion nur als Fallback
+        const useMotion = !hasOrientation && hasMotion; // motion is used only as a fallback
         
-        // Keine Sensoren verfügbar → Tastatur-Modus
+        // No motion sensors available → enforce keyboard mode
         if (!useOrientation && !useMotion) {
             this.callbacks.onSensorStatus('Motion sensors not supported. Keyboard mode only.');
             this.switchMode('keyboard');
@@ -181,25 +181,25 @@ export class InputController {
     }
 
     /**
-     * Event-Handler für DeviceOrientation
-     * 
-     * Verarbeitet Neigungssensordaten:
-     * - beta: Vor-/Zurückneigung des Geräts (in Grad, -180 bis 180)
-     * - gamma: Links/Rechts-Neigung des Geräts (in Grad, -90 bis 90)
-     * 
-     * Prozess:
-     * 1. Validiert und bereinigt Sensordaten (NaN-Check)
-     * 2. Wendet Kalibrierungs-Offset an (falls kalibriert)
-     * 3. Normalisiert auf [-1, 1] Bereich (max 45° Neigung)
-     * 4. Glättet die Werte für sanfte Bewegung
-     * 
+     * DeviceOrientation event handler.
+     *
+     * Processes tilt sensor data:
+     * - beta: front/back tilt of the device (in degrees, -180 to 180)
+     * - gamma: left/right tilt of the device (in degrees, -90 to 90)
+     *
+     * Steps:
+     * 1. Validate and sanitize sensor readings (NaN checks)
+     * 2. Apply calibration offset (if calibration is active)
+     * 3. Normalize to the range [-1, 1] (using max 45° of tilt)
+     * 4. Apply smoothing for visually pleasant motion
+     *
      * @param {DeviceOrientationEvent} event - DeviceOrientation Event
      */
     handleOrientation = (event) => {
-        let beta = event.beta;   // Vor-/Zurückneigung
-        let gamma = event.gamma; // Links/Rechts-Neigung
+        let beta = event.beta;   // front/back tilt
+        let gamma = event.gamma; // left/right tilt
         
-        // Validierung: NaN oder null-Werte abfangen
+        // Validation: guard against NaN or null values
         if (beta === null || beta === undefined || isNaN(beta)) {
             beta = 0;
         }
@@ -207,11 +207,11 @@ export class InputController {
             gamma = 0;
         }
         
-        // Speichere für Kalibrierung
+        // Store last raw values for potential calibration
         this.lastOrientation.beta = beta;
         this.lastOrientation.gamma = gamma;
         
-        // Kalibrierung anwenden: Subtrahiere Offset von aktuellen Werten
+        // Apply calibration: subtract the stored offsets from the current values
         const calibratedBeta = this.isCalibrated ? beta - this.calibration.beta : beta;
         const calibratedGamma = this.isCalibrated ? gamma - this.calibration.gamma : gamma;
         
@@ -219,7 +219,7 @@ export class InputController {
         const normalizedY = this.normalizeTilt(calibratedBeta, 45);
         const normalizedX = this.normalizeTilt(calibratedGamma, 45);
         
-        // Glättung anwenden und Neigungswerte aktualisieren
+        // Apply smoothing and update the normalized tilt
         this.applySmoothedTilt(normalizedX, normalizedY);
         
         // Wechsle zu Sensor-Modus, falls noch nicht aktiv
@@ -229,15 +229,15 @@ export class InputController {
     };
 
     /**
-     * Event-Handler für DeviceMotion (Beschleunigungssensor)
-     * 
-     * Verarbeitet Beschleunigungsdaten inkl. Gravitation:
-     * - accelerationIncludingGravity.x: Beschleunigung in X-Richtung (m/s²)
-     * - accelerationIncludingGravity.y: Beschleunigung in Y-Richtung (m/s²)
-     * 
-     * Wird als Fallback verwendet, wenn DeviceOrientation nicht verfügbar ist.
-     * Die Erdbeschleunigung (9.8 m/s²) wird als Maximum verwendet.
-     * 
+     * DeviceMotion event handler (accelerometer).
+     *
+     * Processes acceleration including gravity:
+     * - accelerationIncludingGravity.x: acceleration on the X axis (m/s²)
+     * - accelerationIncludingGravity.y: acceleration on the Y axis (m/s²)
+     *
+     * Used only as a fallback when DeviceOrientation is not available.
+     * Earth gravity (9.8 m/s²) is used as the maximum magnitude.
+     *
      * @param {DeviceMotionEvent} event - DeviceMotion Event
      */
     handleMotion = (event) => {
@@ -245,15 +245,15 @@ export class InputController {
             let ax = event.accelerationIncludingGravity.x;
             let ay = event.accelerationIncludingGravity.y;
             
-            // Validierung
+            // Validation
             if (ax === null || ax === undefined || isNaN(ax)) ax = 0;
             if (ay === null || ay === undefined || isNaN(ay)) ay = 0;
             
-            // Beschleunigung → Neigung umwandeln
-            const beta = ay;   // Y-Beschleunigung = Vor-/Zurückneigung
-            const gamma = ax;  // X-Beschleunigung = Links/Rechts-Neigung
+            // Map acceleration values into pseudo tilt values
+            const beta = ay;   // Y acceleration ≈ front/back tilt
+            const gamma = ax;  // X acceleration ≈ left/right tilt
             
-            // Kalibrierung anwenden
+            // Apply calibration
             const calibratedBeta = this.isCalibrated ? beta - this.calibration.beta : beta;
             const calibratedGamma = this.isCalibrated ? gamma - this.calibration.gamma : gamma;
             
@@ -287,8 +287,8 @@ export class InputController {
         const hasOrientation = typeof DeviceOrientationEvent !== 'undefined';
         const hasMotion = typeof DeviceMotionEvent !== 'undefined';
         const useOrientation = hasOrientation;
-        const useMotion = !hasOrientation && hasMotion; // Motion nur als Fallback
-        // Weder Orientation noch Motion verfügbar → Tastatur-/Touch-Modus
+        const useMotion = !hasOrientation && hasMotion; // motion only as a fallback
+        // Neither orientation nor motion available → keyboard/touch mode only
         if (!useOrientation && !useMotion) {
             this.callbacks.onSensorStatus('Using keyboard/touch controls.');
             this.switchMode('keyboard');
@@ -296,7 +296,7 @@ export class InputController {
         }
 
         try {
-            // Prüft, ob requestPermission verfügbar ist (iOS 13+)
+            // Check whether requestPermission is available (iOS 13+)
             const needsOriPermission = useOrientation && typeof DeviceOrientationEvent.requestPermission === 'function';
             const needsMotPermission = useMotion && typeof DeviceMotionEvent.requestPermission === 'function';
 
@@ -314,7 +314,7 @@ export class InputController {
                     return true;
                 }
 
-                // Berechtigung verweigert → Tastatur-Modus
+                // Permission denied → fall back to keyboard mode
                 this.callbacks.onSensorStatus('Using keyboard/touch controls.');
                 this.switchMode('keyboard');
                 return false;
@@ -326,7 +326,7 @@ export class InputController {
                 return true;
             }
         } catch (error) {
-            // Fehler → Fallback auf Tastatur
+            // Error → fall back to keyboard mode
             this.callbacks.onSensorStatus('Using keyboard/touch controls.');
             this.switchMode('keyboard');
             return false;
@@ -334,22 +334,22 @@ export class InputController {
     }
 
     /**
-     * Richtet Touch-Steuerung ein (Wischen auf dem Canvas)
-     * 
-     * Funktionsweise:
-     * - touchstart: Speichert Startposition des Fingers
-     * - touchmove: Berechnet Delta (Bewegung) und konvertiert zu Neigung
-     * - touchend: Setzt Neigung langsam auf 0 zurück (sanftes Ausklingen)
-     * 
-     * Die Wischbewegung wird in Neigungswerte [-1, 1] umgewandelt:
-     * - 100px Wisch = maximale Neigung (1.0)
-     * - Wird nur verwendet, wenn keine Sensoren aktiv sind
+     * Sets up touch-based control (swiping on the canvas).
+     *
+     * Behaviour:
+     * - touchstart: stores the starting finger position
+     * - touchmove: computes movement delta and converts it into tilt
+     * - touchend: slowly returns tilt back to 0 (smooth fade-out)
+     *
+     * The swipe distance is mapped into normalized tilt values [-1, 1]:
+     * - 100px movement = full tilt (1.0)
+     * - Only used while no motion sensors are actively driving the input
      */
     setupTouchControls() {
         const canvas = document.getElementById('game-canvas');
         if (!canvas) return;
 
-        // Touch-Start: Speichere Startposition
+        // Touch start: remember the starting finger position
         canvas.addEventListener('touchstart', (event) => {
             event.preventDefault();
             const touch = event.touches[0];
@@ -358,22 +358,22 @@ export class InputController {
             this.touchActive = true;
         }, { passive: false });
 
-        // Touch-Bewegung: Konvertiere Wischbewegung zu Neigung
+        // Touch move: convert swipe movement into tilt
         canvas.addEventListener('touchmove', (event) => {
             if (!this.touchActive) return;
             event.preventDefault();
             const touch = event.touches[0];
             
-            // Berechne Delta (Bewegung seit touchstart)
+            // Delta between current and starting finger position
             const deltaX = touch.clientX - this.touchStartX;
             const deltaY = touch.clientY - this.touchStartY;
             
-            // Normalisiere: 100px = maximale Neigung (1.0)
+            // Normalize: 100px = full tilt (1.0)
             const maxDelta = 100;
             const targetX = Math.max(-1, Math.min(1, deltaX / maxDelta));
             const targetY = Math.max(-1, Math.min(1, deltaY / maxDelta));
             
-            // Wende Neigung an
+            // Apply tilt with smoothing
             this.applySmoothedTilt(targetX, targetY);
             
             // Wechsle zu Keyboard-Modus, falls keine Sensoren aktiv
@@ -382,14 +382,14 @@ export class InputController {
             }
         }, { passive: false });
 
-        // Touch-Ende: Setze Neigung sanft auf 0 zurück
+        // Touch end: gently fade tilt back to zero
         canvas.addEventListener('touchend', (event) => {
             event.preventDefault();
             this.touchActive = false;
             
-            // Nur zurücksetzen, wenn keine Sensoren aktiv sind
+            // Only reset manually if no motion sensors are active
             if (!this.deviceOrientationActive) {
-                // Sanftes Ausklingen: Reduziere Neigung schrittweise auf 0
+                // Smooth fade-out: gradually reduce tilt back to 0
                 const loop = () => {
                     if (this.tilt.x !== 0 || this.tilt.y !== 0) {
                         this.applySmoothedTilt(0, 0);
@@ -405,19 +405,19 @@ export class InputController {
     }
 
     /**
-     * Richtet Tastatur-Steuerung ein (Pfeiltasten oder WASD)
-     * 
-     * Unterstützte Tasten:
-     * - Pfeiltasten oder WASD
-     * - W/↑ = nach oben (tilt.y = -1)
-     * - S/↓ = nach unten (tilt.y = +1)
-     * - A/← = nach links (tilt.x = -1)
-     * - D/→ = nach rechts (tilt.x = +1)
-     * 
-     * Funktionsweise:
-     * - keydown/keyup: Aktualisiert Tastenstatus
-     * - Animation-Loop: Konvertiert Tastenstatus kontinuierlich zu Neigungswerten
-     * - Kombinationen möglich (z.B. W+D = diagonal oben-rechts)
+     * Sets up keyboard controls (arrow keys or WASD).
+     *
+     * Supported keys:
+     * - Arrow keys or WASD
+     * - W/↑ = up (tilt.y = -1)
+     * - S/↓ = down (tilt.y = +1)
+     * - A/← = left (tilt.x = -1)
+     * - D/→ = right (tilt.x = +1)
+     *
+     * Behaviour:
+     * - keydown/keyup: updates the key state
+     * - animation loop: continuously converts key state into tilt values
+     * - combinations are possible (e.g. W + D = diagonal up-right)
      */
     setupKeyboardControls() {
         const updateKeyFromEvent = (key, pressed) => {
@@ -449,24 +449,24 @@ export class InputController {
             }
         });
 
-        // Kontinuierliche Loop: Konvertiert Tastenstatus zu Neigungswerten
+        // Continuous loop: convert current key state into tilt values
         const loop = () => {
             const hasKeyPressed = this.keys.up || this.keys.down || this.keys.left || this.keys.right;
             
             if (hasKeyPressed) {
-                // Berechne Ziel-Neigung basierend auf gedrückten Tasten
-                // Kombinationen möglich: z.B. rechts + oben = (1, -1)
+                // Compute target tilt based on currently pressed keys
+                // Combinations are supported: e.g. right + up = (1, -1)
                 const targetX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
                 const targetY = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
                 
-                // Wende glättete Neigung an
+                // Apply smoothed tilt
                 this.applySmoothedTilt(targetX, targetY);
                 
                 if (this.mode !== 'keyboard') {
                     this.switchMode('keyboard');
                 }
             } else {
-                // Keine Taste gedrückt → Neigung auf 0 (nur im Keyboard-Modus)
+                // No key pressed → reset tilt to 0 (only in keyboard mode)
                 if (this.mode === 'keyboard' && !this.deviceOrientationActive) {
                     this.tilt.x = 0;
                     this.tilt.y = 0;
@@ -480,7 +480,7 @@ export class InputController {
     }
 
     /**
-     * Wechselt den Eingabemodus und benachrichtigt UI
+     * Switches the active input mode and notifies the UI.
      * @param {string} mode - 'sensor' oder 'keyboard'
      */
     switchMode(mode) {
@@ -493,16 +493,16 @@ export class InputController {
     }
 
     /**
-     * Normalisiert einen Sensormesswert auf den Bereich [-1, 1]
-     * 
-     * @param {number} value - Roher Sensormesswert (Grad oder m/s²)
-     * @param {number} maxDegrees - Maximaler Wert für volle Neigung (z.B. 45° oder 9.8 m/s²)
-     * @returns {number} Normalisierter Wert im Bereich [-1, 1], oder 0 wenn zu klein (< 0.01)
-     * 
-     * Beispiel:
-     * - normalizeTilt(22.5, 45) → 0.5 (halb maximale Neigung)
-     * - normalizeTilt(45, 45) → 1.0 (maximale Neigung)
-     * - normalizeTilt(0.1, 45) → 0 (zu klein, wird zu 0 gerundet)
+     * Normalizes a sensor value into the range [-1, 1].
+     *
+     * @param {number} value - raw sensor value (degrees or m/s²)
+     * @param {number} maxDegrees - maximum value for full tilt (e.g. 45° or 9.8 m/s²)
+     * @returns {number} normalized value in the range [-1, 1], or 0 if very small (< 0.01)
+     *
+     * Examples:
+     * - normalizeTilt(22.5, 45) → 0.5 (half of the maximum tilt)
+     * - normalizeTilt(45, 45) → 1.0 (full tilt)
+     * - normalizeTilt(0.1, 45) → 0 (too small, treated as no movement)
      */
     normalizeTilt(value, maxDegrees) {
         // Begrenze Wert auf [-maxDegrees, maxDegrees]
@@ -516,17 +516,17 @@ export class InputController {
     }
 
     /**
-     * Wendet glättete Neigung an (Lineare Interpolation)
-     * 
-     * Verwendet lineare Interpolation (Lerp) für sanfte Bewegungen:
+     * Applies smoothed tilt using linear interpolation.
+     *
+     * Uses linear interpolation (lerp) for smooth movements:
      * newValue = oldValue * (1 - smoothing) + targetValue * smoothing
      * 
-     * Unterschiedliche Glättung je nach Modus:
-     * - Keyboard: smoothing = 0.75 (langsamere, kontrolliertere Bewegung)
-     * - Sensor: smoothing = 0.4 (schnellere Reaktion auf Sensordaten)
-     * 
-     * @param {number} targetX - Ziel-Neigung X-Achse [-1, 1]
-     * @param {number} targetY - Ziel-Neigung Y-Achse [-1, 1]
+     * Different smoothing values per mode:
+     * - Keyboard: smoothing = 0.75 (slower, more controlled movement)
+     * - Sensor: smoothing = 0.4 (faster, more responsive movement)
+     *
+     * @param {number} targetX - target tilt on X axis [-1, 1]
+     * @param {number} targetY - target tilt on Y axis [-1, 1]
      */
     applySmoothedTilt(targetX, targetY) {
         const smoothing = this.mode === 'keyboard' ? 0.75 : 0.4;
@@ -540,16 +540,16 @@ export class InputController {
     }
 
     /**
-     * Kalibriert die Sensoren
-     * 
-     * Setzt die aktuelle Geräteposition als "neutral" (0° Neigung).
-     * Alle nachfolgenden Sensordaten werden um diesen Offset korrigiert.
-     * 
-     * Prozess:
-     * 1. Speichert aktuelle beta/gamma Werte als Kalibrierungs-Offset
-     * 2. Setzt Neigungswerte auf 0
-     * 3. Aktiviert Kalibrierungs-Flag
-     * 4. Benachrichtigt UI (Start/Ende)
+     * Calibrates all active motion sensors.
+     *
+     * Treats the current device orientation as the neutral position (0° tilt).
+     * All subsequent sensor readings are corrected using this offset.
+     *
+     * Steps:
+     * 1. Store the current beta/gamma values as calibration offsets
+     * 2. Reset tilt values back to 0
+     * 3. Mark calibration as active
+     * 4. Notify the UI when calibration starts and finishes
      */
     calibrate() {
         this.callbacks.onCalibrationStart();
@@ -562,22 +562,22 @@ export class InputController {
             this.tilt.x = 0;
             this.tilt.y = 0;
         } else {
-            // Keine Sensoren → einfach Neigung zurücksetzen
+            // No motion sensors → simply reset tilt values
             this.tilt.x = 0;
             this.tilt.y = 0;
         }
         
-        // Benachrichtige UI nach 600ms, dass Kalibrierung abgeschlossen ist
+        // Notify the UI after 600ms that calibration has completed
         setTimeout(() => {
             this.callbacks.onCalibrationEnd();
         }, 600);
     }
 
     /**
-     * Gibt die aktuellen Neigungswerte zurück
-     * 
-     * @returns {Object} Kopie der aktuellen Neigungswerte { x: number, y: number }
-     *                   Werte sind im Bereich [-1, 1]
+     * Returns the current normalized tilt values.
+     *
+     * @returns {Object} copy of the current tilt values { x: number, y: number }
+     *                   both in the range [-1, 1]
      */
     getTilt() {
         return { ...this.tilt }; // Kopie zurückgeben (verhindert externe Manipulation)

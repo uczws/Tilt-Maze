@@ -20,17 +20,17 @@ export class BallState {
         this.radius = radius;
         
         // ============================================================
-        // ICE-PHYSICS PARAMETER
+        // ICE-PHYSICS PARAMETERS
         // ============================================================
-        // Maximalgeschwindigkeit: Wie schnell der Ball maximal werden kann
+        // Maximum speed: how fast the ball is allowed to get
         this.maxSpeed = 0.25;
         
-        // Reibungsfaktor: Wie schnell der Ball ausrollt (0.95 = langsam, 0.99 = sehr langsam)
-        // Höhere Werte = weniger Reibung = längeres Gleiten (wie auf Eis)
+        // Friction factor: how quickly the ball slows down (0.95 = slower stop, 0.99 = very slippery)
+        // Higher values = less friction = longer sliding distance (ice-like feeling)
         this.friction = 0.96;
         
-        // Beschleunigung: Wie schnell der Ball beim Drücken beschleunigt
-        // Höhere Werte = schnelleres Beschleunigen
+        // Acceleration: how quickly the ball accelerates in response to input
+        // Higher values = stronger acceleration
         this.acceleration = 0.012;
         
         this.reset(1.5, 1.5);
@@ -62,18 +62,18 @@ export class BallState {
 
     /**
      * Integrate velocity into position with friction applied.
-     * Simuliert realistische Reibung: Der Ball rollt langsam aus,
-     * ähnlich wie eine Kugel auf einer glatten Oberfläche.
+     * Simulates realistic friction: the ball gradually rolls out and comes
+     * to rest, similar to a marble on a smooth surface.
      */
     integrate() {
-        // Wende Reibung an: Reduziere Geschwindigkeit pro Frame
-        // friction = 0.96 bedeutet: 4% Geschwindigkeitsverlust pro Frame
-        // Dies erzeugt ein natürliches Ausrollen
+        // Apply friction: reduce velocity every frame.
+        // friction = 0.96 means ~4% speed loss per frame, which creates
+        // a natural looking roll-out.
         this.vx *= this.friction;
         this.vy *= this.friction;
         
-        // Stoppe bei sehr kleinen Geschwindigkeiten (verhindert unendliches Gleiten)
-        // Schwellenwert ist niedrig, damit der Ball natürlich ausrollt
+        // Stop at very small velocities (prevents endless micro-sliding).
+        // Threshold is small enough to still look like a natural roll-out.
         if (Math.abs(this.vx) < 0.001) this.vx = 0;
         if (Math.abs(this.vy) < 0.001) this.vy = 0;
         
