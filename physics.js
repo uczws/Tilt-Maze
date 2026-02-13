@@ -48,14 +48,6 @@ export class BallState {
     }
 
     /**
-     * Stoppt den Ball sofort (setzt Geschwindigkeit auf 0).
-     */
-    stop() {
-        this.vx = 0;
-        this.vy = 0;
-    }
-
-    /**
      * Apply normalized tilt or keyboard input to influence
      * acceleration. Inputs are clamped to [-1, 1].
      */

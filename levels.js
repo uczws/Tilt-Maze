@@ -376,15 +376,3 @@ export function getLevelData(levelNumber) {
     hydrated.grid = cloneGrid(hydrated.grid);
     return hydrated;
 }
-
-/**
- * Provide lightweight metadata for UI menus without cloning the
- * entire grid each time.
- */
-export function listLevelSummaries() {
-    return LEVELS.map(level => ({
-        id: level.id,
-        name: level.name,
-        size: `${level.width}×${level.height}`
-    }));
-}
