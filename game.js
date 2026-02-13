@@ -3,6 +3,7 @@ import { Renderer } from './renderer.js';
 import { BallState, simulatePhysicsStep } from './physics.js';
 import { UIManager } from './ui.js';
 import { getLevelData, TOTAL_LEVELS } from './levels.js';
+import { MAX_LIVES, STORAGE_KEY } from './constants.js';
 
 class GameEngine {
     constructor() {
@@ -10,7 +11,7 @@ class GameEngine {
         this.ball = new BallState();
         this.currentLevel = 1;
         this.levelData = null;
-        this.lives = 3;
+        this.lives = MAX_LIVES;
         this.levelStartTime = 0;
         this.elapsedTime = 0;
         this.isRunning = false;
@@ -21,7 +22,6 @@ class GameEngine {
         this.loadProgress();
 
         this.input = new InputController({
-            onModeChange: (message) => this.ui?.updateControlMode(message),
             onSensorStatus: (message) => this.ui?.updateSensorStatus(message),
             onCalibrationStart: () => this.ui?.setCalibrationMessage(true),
             onCalibrationEnd: () => this.ui?.setCalibrationMessage(false)
@@ -29,20 +29,8 @@ class GameEngine {
 
         this.ui = new UIManager({
             totalLevels: TOTAL_LEVELS,
-            onStart: async () => {
-                try {
-                    await this.input.requestPermission();
-                } catch (error) {
-                }
-                this.beginAdventure(1, { resetProgress: false });
-            },
-            onSelectLevel: async (level) => {
-                try {
-                    await this.input.requestPermission();
-                } catch (error) {
-                }
-                this.beginAdventure(level, { resetProgress: false });
-            },
+            onStart: () => this.requestPermissionAndBegin(1),
+            onSelectLevel: (level) => this.requestPermissionAndBegin(level),
             onPause: () => this.pauseGame(),
             onResume: () => this.resumeGame(),
             onRestart: () => this.restartLevel(),
@@ -50,15 +38,22 @@ class GameEngine {
             onNextLevel: () => this.advanceToNextLevel(),
             onRetry: () => this.restartLevel(),
             onCalibrate: async () => {
-                if (!this.input.deviceOrientationActive) {
-                    await this.input.requestPermission();
-                }
+                if (!this.input.deviceOrientationActive) await this.input.requestPermission();
                 this.input.calibrate();
             }
         });
 
         this.syncUIProgress();
         this.bindSystemEvents();
+    }
+
+    async requestPermissionAndBegin(levelNumber) {
+        try {
+            await this.input.requestPermission();
+        } catch {
+            /* permission denied or unavailable – continue with keyboard/touch */
+        }
+        this.beginAdventure(levelNumber, { resetProgress: false });
     }
 
     beginAdventure(levelNumber, { resetProgress } = { resetProgress: false }) {
@@ -68,7 +63,7 @@ class GameEngine {
                 this.resetProgress();
             }
             this.currentLevel = levelNumber;
-            this.lives = 3;
+            this.lives = MAX_LIVES;
             this.loadLevel(levelNumber);
             this.ui.hideAllScreens();
             this.ui.updateHUD({ lives: this.lives });
@@ -81,22 +76,18 @@ class GameEngine {
     }
 
     loadLevel(levelNumber) {
-        try {
-            this.levelData = getLevelData(levelNumber);
-            this.ball.reset(this.levelData.start.x, this.levelData.start.y);
-            this.renderer.configureLevel(this.levelData);
-            this.renderer.render(this.ball);
-            this.levelStartTime = 0;
-            this.elapsedTime = 0;
-            this.ui.updateHUD({
-                levelNumber,
-                levelName: this.levelData.name,
-                timeSeconds: 0,
-                lives: this.lives
-            });
-        } catch (error) {
-            throw error;
-        }
+        this.levelData = getLevelData(levelNumber);
+        this.ball.reset(this.levelData.start.x, this.levelData.start.y);
+        this.renderer.configureLevel(this.levelData);
+        this.renderer.render(this.ball);
+        this.levelStartTime = 0;
+        this.elapsedTime = 0;
+        this.ui.updateHUD({
+            levelNumber,
+            levelName: this.levelData.name,
+            timeSeconds: 0,
+            lives: this.lives
+        });
     }
 
     restartLevel() {
@@ -143,14 +134,7 @@ class GameEngine {
         this.ui.updateHUD({ timeSeconds: this.elapsedTime });
 
         const tilt = this.input.getTilt();
-
-        if (this.input.mode === 'keyboard') {
-            if (tilt.x !== 0 || tilt.y !== 0) {
-                this.ball.applyTilt(tilt.x, tilt.y);
-            }
-        } else {
-            this.ball.applyTilt(tilt.x, tilt.y);
-        }
+        this.ball.applyTilt(tilt.x, tilt.y);
         
         const result = simulatePhysicsStep(this.ball, this.levelData.grid);
         this.renderer.render(this.ball);
@@ -170,7 +154,7 @@ class GameEngine {
         this.pauseGame();
         
         if (this.lives <= 0) {
-            this.lives = 3;
+            this.lives = MAX_LIVES;
             this.currentLevel = 1;
             this.loadLevel(1);
             this.ui.updateHUD({ lives: this.lives, levelNumber: 1, levelName: this.levelData.name });
@@ -228,7 +212,7 @@ class GameEngine {
     resetProgress() {
         this.completedLevels.clear();
         this.bestTimes = {};
-        localStorage.removeItem('tilt-maze-progress');
+        localStorage.removeItem(STORAGE_KEY);
         this.ui.resetProgress();
     }
 
@@ -238,14 +222,15 @@ class GameEngine {
                 completed: Array.from(this.completedLevels),
                 bestTimes: this.bestTimes
             };
-            localStorage.setItem('tilt-maze-progress', JSON.stringify(payload));
-        } catch (error) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        } catch {
+            /* localStorage may be full or disabled */
         }
     }
 
     loadProgress() {
         try {
-            const stored = localStorage.getItem('tilt-maze-progress');
+            const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 const data = JSON.parse(stored);
                 (data.completed || []).forEach((level) => this.completedLevels.add(level));
@@ -253,7 +238,8 @@ class GameEngine {
                     this.bestTimes = data.bestTimes;
                 }
             }
-        } catch (error) {
+        } catch {
+            /* localStorage may be corrupted or disabled */
         }
     }
 
@@ -279,7 +265,7 @@ class GameEngine {
             this.orientationQuery.addEventListener('change', updateOrientation);
         } else {
             this.orientationQuery.addListener(updateOrientation);
-    }
+        }
         window.addEventListener('resize', updateOrientation);
         updateOrientation();
 

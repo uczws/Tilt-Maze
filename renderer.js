@@ -7,12 +7,7 @@
  * =============================================================
  */
 
-const CELL_TYPES = {
-    EMPTY: 0,
-    WALL: 1,
-    HOLE: 2,
-    GOAL: 3
-};
+import { CELL_TYPES } from './constants.js';
 
 export class Renderer {
     constructor(canvasId) {

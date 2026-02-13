@@ -7,6 +7,8 @@
  * =============================================================
  */
 
+import { MAX_LIVES } from './constants.js';
+
 const DEFAULT_HANDLER = () => {};
 
 export class UIManager {
@@ -37,9 +39,8 @@ export class UIManager {
     }
 
     formatLives(lives) {
-        const maxLives = 3;
-        const safeLives = Math.max(0, Math.min(maxLives, Math.floor(lives)));
-        return '♥'.repeat(safeLives) + '♡'.repeat(maxLives - safeLives);
+        const safeLives = Math.max(0, Math.min(MAX_LIVES, Math.floor(lives)));
+        return '♥'.repeat(safeLives) + '♡'.repeat(MAX_LIVES - safeLives);
     }
 
     cacheElements() {
@@ -51,12 +52,11 @@ export class UIManager {
             burgerMenu: document.getElementById('burger-menu-screen'),
             levelSelectMobile: document.getElementById('level-select-screen-mobile')
         };
-        // falls nötig
+        // if needed
         this.hud = {
             levelDisplay: document.getElementById('level-display'),
             timeDisplay: document.getElementById('time-display'),
             livesDisplay: document.getElementById('lives-display'),
-            controlMode: document.getElementById('control-mode'),
             sensorStatus: document.getElementById('sensor-status')
         };
         this.messages = {
@@ -131,33 +131,39 @@ export class UIManager {
     }
 
     bindEvents() {
+        this.bindStartAndLevelSelectEvents();
+        this.bindPauseAndGameplayEvents();
+        this.bindWinLoseEvents();
+        this.bindCalibrateEvents();
+        this.bindBurgerMenuEvents();
+    }
+
+    bindStartAndLevelSelectEvents() {
         if (this.buttons.start) {
-            const handleStart = (event) => {
-                // Mobile Chrome can preserve a page scroll offset (100vh vs visible viewport).
-                // Ensure we always start the game at the top.
+            this.buttons.start.addEventListener('click', () => {
                 try {
                     window.scrollTo(0, 0);
                     document.documentElement.scrollTop = 0;
                     document.body.scrollTop = 0;
-                } catch (e) {
-                    // ignore
+                } catch {
+                    /* scroll fallback ignored */
                 }
                 this.hideAllScreens();
                 this.handlers.onStart(this.currentLevel);
-            };
-            this.buttons.start.addEventListener('click', handleStart);
+            });
         }
         this.buttons.levelSelectHud?.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleLevelDropdown();
         });
-        
         document.addEventListener('click', (e) => {
-            const isLevelButton = e.target === this.buttons.levelSelectHud;
-            if (this.levelDropdown && !this.levelDropdown.contains(e.target) && !isLevelButton) {
+            if (this.levelDropdown && !this.levelDropdown.contains(e.target) && e.target !== this.buttons.levelSelectHud) {
                 this.hideLevelDropdown();
             }
         });
+    }
+
+    bindPauseAndGameplayEvents() {
         this.buttons.pause?.addEventListener('click', () => {
             this.showScreen('pause');
             this.handlers.onPause();
@@ -177,6 +183,9 @@ export class UIManager {
             this.showScreen('start');
             this.handlers.onMenu();
         });
+    }
+
+    bindWinLoseEvents() {
         this.buttons.retry?.addEventListener('click', () => {
             this.hideScreen('lose');
             this.handlers.onRetry();
@@ -193,14 +202,15 @@ export class UIManager {
             this.hideScreen('win');
             this.handlers.onNextLevel();
         });
-        this.buttons.calibrate?.addEventListener('click', () => {
-            this.handlers.onCalibrate();
-        });
-        this.buttons.calibrateMobile?.addEventListener('click', () => {
-            this.handlers.onCalibrate();
-        });
-        
-        // Burger-Menü Event-Handler
+    }
+
+    bindCalibrateEvents() {
+        const onCalibrate = () => this.handlers.onCalibrate();
+        this.buttons.calibrate?.addEventListener('click', onCalibrate);
+        this.buttons.calibrateMobile?.addEventListener('click', onCalibrate);
+    }
+
+    bindBurgerMenuEvents() {
         this.buttons.burgerMenu?.addEventListener('click', () => {
             this.showBurgerMenu();
         });
@@ -234,7 +244,7 @@ export class UIManager {
             this.handlers.onMenu();
         });
     }
-    
+
     showBurgerMenu() {
         this.hideLevelDropdown();
         this.showScreen('burgerMenu');
@@ -312,7 +322,7 @@ export class UIManager {
         if (typeof levelNumber === 'number') {
             this.currentLevel = levelNumber;
             if (this.hud.levelDisplay) {
-            this.hud.levelDisplay.textContent = `${levelNumber} · ${levelName}`;
+                this.hud.levelDisplay.textContent = `${levelNumber} · ${levelName}`;
             }
             this.updateLevelButtonStates();
         }
@@ -326,15 +336,9 @@ export class UIManager {
         }
     }
 
-    updateControlMode(message) {
-        if (this.hud.controlMode) {
-        this.hud.controlMode.textContent = message;
-        }
-    }
-
     updateSensorStatus(message) {
         if (this.hud.sensorStatus) {
-        this.hud.sensorStatus.textContent = message;
+            this.hud.sensorStatus.textContent = message;
         }
     }
 

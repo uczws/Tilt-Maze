@@ -8,12 +8,8 @@
  * =============================================================
  */
 
-const CELL_TYPES = {
-    EMPTY: 0,
-    WALL: 1,
-    HOLE: 2,
-    GOAL: 3
-};
+import { CELL_TYPES } from './constants.js';
+export { CELL_TYPES };
 
 /**
  * Represents the brass ball rolling around the wooden maze.

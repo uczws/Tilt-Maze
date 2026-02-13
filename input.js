@@ -51,6 +51,20 @@
 
 const DEFAULT_CALLBACK = () => {};
 
+/** Maps key identifiers to { axis: 'x'|'y', direction: 1|-1 } for tilt. */
+const KEY_MAP = {
+    arrowup: { axis: 'y', direction: -1 },
+    w: { axis: 'y', direction: -1 },
+    arrowdown: { axis: 'y', direction: 1 },
+    s: { axis: 'y', direction: 1 },
+    arrowleft: { axis: 'x', direction: -1 },
+    a: { axis: 'x', direction: -1 },
+    arrowright: { axis: 'x', direction: 1 },
+    d: { axis: 'x', direction: 1 }
+};
+
+const SUPPORTED_KEYS = Object.keys(KEY_MAP);
+
 export class InputController {
     /**
      * Konstruktor - Initialisiert den InputController
@@ -141,19 +155,26 @@ export class InputController {
                                (hasMotion && typeof DeviceMotionEvent.requestPermission === 'function');
         
         if (needsPermission) {
-            // Benutzer muss Berechtigung erteilen (wird über requestPermission() gemacht)
             this.callbacks.onSensorStatus('Tap "Start Adventure" to enable motion controls.');
         } else {
-            // Sensoren sind sofort verfügbar → Event-Listener registrieren
-            if (hasOrientation) {
-                window.addEventListener('deviceorientation', this.handleOrientation, { passive: true });
-            }
-            if (hasMotion) {
-                window.addEventListener('devicemotion', this.handleMotion, { passive: true });
-            }
+            this.registerSensorListeners(hasOrientation, hasMotion);
             this.deviceOrientationActive = true;
             this.callbacks.onSensorStatus('Tilt controls ready.');
             this.switchMode('sensor');
+        }
+    }
+
+    /**
+     * Registriert DeviceOrientation/DeviceMotion Event-Listener
+     * @param {boolean} hasOrientation
+     * @param {boolean} hasMotion
+     */
+    registerSensorListeners(hasOrientation, hasMotion) {
+        if (hasOrientation) {
+            window.addEventListener('deviceorientation', this.handleOrientation, { passive: true });
+        }
+        if (hasMotion) {
+            window.addEventListener('devicemotion', this.handleMotion, { passive: true });
         }
     }
 
@@ -261,8 +282,10 @@ export class InputController {
             return true;
         }
 
-        // DeviceOrientation nicht verfügbar → Tastatur-Modus
-        if (typeof DeviceOrientationEvent === 'undefined') {
+        const hasOrientation = typeof DeviceOrientationEvent !== 'undefined';
+        const hasMotion = typeof DeviceMotionEvent !== 'undefined';
+        // Weder Orientation noch Motion verfügbar → Tastatur-/Touch-Modus
+        if (!hasOrientation && !hasMotion) {
             this.callbacks.onSensorStatus('Using keyboard/touch controls.');
             this.switchMode('keyboard');
             return false;
@@ -270,26 +293,29 @@ export class InputController {
 
         try {
             // Prüft, ob requestPermission verfügbar ist (iOS 13+)
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            const needsOriPermission = hasOrientation && typeof DeviceOrientationEvent.requestPermission === 'function';
+            const needsMotPermission = hasMotion && typeof DeviceMotionEvent.requestPermission === 'function';
+
+            if (needsOriPermission || needsMotPermission) {
                 this.callbacks.onSensorStatus('Tap "Allow" in the popup to enable tilt controls.');
-                const permission = await DeviceOrientationEvent.requestPermission();
-                
-                if (permission === 'granted') {
-                    // Berechtigung erteilt → Event-Listener registrieren
-                    window.addEventListener('deviceorientation', this.handleOrientation, { passive: true });
+                const ori = needsOriPermission ? await DeviceOrientationEvent.requestPermission() : 'denied';
+                const mot = needsMotPermission ? await DeviceMotionEvent.requestPermission() : 'denied';
+                const granted = (ori === 'granted') || (mot === 'granted');
+
+                if (granted) {
+                    this.registerSensorListeners(hasOrientation, hasMotion);
                     this.deviceOrientationActive = true;
                     this.callbacks.onSensorStatus('Tilt controls enabled! Try tilting your device.');
                     this.switchMode('sensor');
                     return true;
-                } else {
-                    // Berechtigung verweigert → Tastatur-Modus
-                    this.callbacks.onSensorStatus('Using keyboard/touch controls.');
-                    this.switchMode('keyboard');
-                    return false;
                 }
+
+                // Berechtigung verweigert → Tastatur-Modus
+                this.callbacks.onSensorStatus('Using keyboard/touch controls.');
+                this.switchMode('keyboard');
+                return false;
             } else {
-                // Keine Berechtigung nötig (ältere iOS-Versionen, Android) → direkt aktivieren
-                window.addEventListener('deviceorientation', this.handleOrientation, { passive: true });
+                this.registerSensorListeners(hasOrientation, hasMotion);
                 this.deviceOrientationActive = true;
                 this.callbacks.onSensorStatus('Tilt controls ready (if supported).');
                 this.switchMode('sensor');
@@ -390,70 +416,29 @@ export class InputController {
      * - Kombinationen möglich (z.B. W+D = diagonal oben-rechts)
      */
     setupKeyboardControls() {
-        // Tastendruck: Setze Tastenstatus auf true
+        const updateKeyFromEvent = (key, pressed) => {
+            const mapping = KEY_MAP[key];
+            if (!mapping) return;
+            if (mapping.axis === 'x') {
+                this.keys[mapping.direction === 1 ? 'right' : 'left'] = pressed;
+            } else {
+                this.keys[mapping.direction === 1 ? 'down' : 'up'] = pressed;
+            }
+        };
+
         document.addEventListener('keydown', (event) => {
             const key = event.key.toLowerCase();
-            // Nur relevante Tasten verarbeiten
-            if (!['arrowup', 'w', 'arrowdown', 's', 'arrowleft', 'a', 'arrowright', 'd'].includes(key)) {
-                return;
-            }
+            if (!SUPPORTED_KEYS.includes(key)) return;
             event.preventDefault();
-            
-            // Aktualisiere Tastenstatus
-            switch (key) {
-                case 'arrowup':
-                case 'w':
-                    this.keys.up = true;
-                    break;
-                case 'arrowdown':
-                case 's':
-                    this.keys.down = true;
-                    break;
-                case 'arrowleft':
-                case 'a':
-                    this.keys.left = true;
-                    break;
-                case 'arrowright':
-                case 'd':
-                    this.keys.right = true;
-                    break;
-            }
-            
-            // Wechsle zu Keyboard-Modus, falls keine Sensoren aktiv
-            if (!this.deviceOrientationActive) {
-                this.switchMode('keyboard');
-            }
+            updateKeyFromEvent(key, true);
+            if (!this.deviceOrientationActive) this.switchMode('keyboard');
         });
 
-        // Tastenloslassen: Setze Tastenstatus auf false
         document.addEventListener('keyup', (event) => {
             const key = event.key.toLowerCase();
-            if (!['arrowup', 'w', 'arrowdown', 's', 'arrowleft', 'a', 'arrowright', 'd'].includes(key)) {
-                return;
-            }
+            if (!SUPPORTED_KEYS.includes(key)) return;
             event.preventDefault();
-            
-            // Aktualisiere Tastenstatus
-            switch (key) {
-                case 'arrowup':
-                case 'w':
-                    this.keys.up = false;
-                    break;
-                case 'arrowdown':
-                case 's':
-                    this.keys.down = false;
-                    break;
-                case 'arrowleft':
-                case 'a':
-                    this.keys.left = false;
-                    break;
-                case 'arrowright':
-                case 'd':
-                    this.keys.right = false;
-                    break;
-            }
-            
-            // Wenn keine Taste mehr gedrückt, Neigung auf 0 setzen
+            updateKeyFromEvent(key, false);
             if (!this.keys.up && !this.keys.down && !this.keys.left && !this.keys.right) {
                 this.tilt.x = 0;
                 this.tilt.y = 0;
@@ -540,20 +525,11 @@ export class InputController {
      * @param {number} targetY - Ziel-Neigung Y-Achse [-1, 1]
      */
     applySmoothedTilt(targetX, targetY) {
-        if (this.mode === 'keyboard') {
-            // Keyboard-Modus: Sofort auf 0 setzen, wenn keine Eingabe
-            if (targetX === 0 && targetY === 0) {
-                this.tilt.x = 0;
-                this.tilt.y = 0;
-            } else {
-                // Langsamere Glättung für präzisere Tastatursteuerung
-                const smoothing = 0.75;
-                this.tilt.x = this.tilt.x * (1 - smoothing) + targetX * smoothing;
-                this.tilt.y = this.tilt.y * (1 - smoothing) + targetY * smoothing;
-            }
+        const smoothing = this.mode === 'keyboard' ? 0.75 : 0.4;
+        if (this.mode === 'keyboard' && targetX === 0 && targetY === 0) {
+            this.tilt.x = 0;
+            this.tilt.y = 0;
         } else {
-            // Sensor-Modus: Schnellere Glättung für natürlichere Bewegung
-            const smoothing = 0.4;
             this.tilt.x = this.tilt.x * (1 - smoothing) + targetX * smoothing;
             this.tilt.y = this.tilt.y * (1 - smoothing) + targetY * smoothing;
         }
