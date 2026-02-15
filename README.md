@@ -18,7 +18,6 @@ The project was created for the *Mobile Computing* course and demonstrates moder
 - [Controls](#controls)
 - [Responsive Behavior](#responsive-behavior)
 - [Technical Aspects](#technical-aspects)
-- [Possible Future Extensions / Bonus Ideas](#possible-future-extensions--bonus-ideas)
 - [License](#license)
 
 ---
@@ -187,15 +186,6 @@ The project was created for the *Mobile Computing* course and demonstrates moder
 - **Responsiveness**
   - Designed for different form factors (phones, tablets, laptops/desktop).
   - Dynamic viewport height handling on mobile, plus orientation-specific hints.
-
----
-
-## Possible Future Extensions / Bonus Ideas
-
-- Additional, more complex levels (moving obstacles, dynamic tiles).
-- Sound effects and background music.
-- Online high score board with a backend service.
-- Additional accessibility options (alternative control schemes, high-contrast themes).
 
 ---
 
